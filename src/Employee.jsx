@@ -48,6 +48,7 @@ export default function Employee({ user, setUser }) {
   const [imageUrl, setImageUrl] = useState("");
   const [error, setError] = useState(null);
   const [selectedSetting, setSelectedSetting] = useState(null);
+  const [timeSinceJoining, setTimeSinceJoining] = useState("N/A"); // This holds the descriptive string
 
   const handleLogout = () => {
     setUser(null);
@@ -61,9 +62,11 @@ export default function Employee({ user, setUser }) {
   const phone_number = user?.phone_number || "N/A";
   const address = user?.address || "N/A";
   const job_title = user?.Job_title || user?.job_title || "N/A";
+  const joining_date = user?.joining_date || "N/A"; // This holds the actual date
+  const employee_id = user?.employee_id || "N/A";
 
   useEffect(() => {
-    const fetchImage = async () => {
+    const fetchProfileData = async () => {
       const token = localStorage.getItem('accessToken');
       if (!token) {
         handleLogout();
@@ -89,13 +92,17 @@ export default function Employee({ user, setUser }) {
 
         const data = await response.json();
         setImageUrl(`http://127.0.0.1:8000${data.profile.image}`);
+        if (data.profile.time_since_joining) {
+          setTimeSinceJoining(data.profile.time_since_joining);
+        }
+
       } catch (error) {
-        console.error("Error fetching image:", error);
-        setError("Failed to load profile image.");
+        console.error("Error fetching profile data:", error);
+        setError("Failed to load profile data.");
       }
     };
 
-    fetchImage();
+    fetchProfileData();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSettingClick = (settingName, settingContent) => {
@@ -163,6 +170,7 @@ export default function Employee({ user, setUser }) {
               <div className="text-center">
                 {/* User name is darker for better visibility */}
                 <h2 className="text-2xl font-bold text-neutral-900 mb-1">{name}</h2>
+                <p className="text-neutral-600 text-sm">Employee ID: {employee_id}</p>
               </div>
             </div>
           </div>
@@ -214,6 +222,19 @@ export default function Employee({ user, setUser }) {
                 {/* Text is darker for better visibility */}
                 <span className="text-neutral-800">Job Title</span>
                 {/* Icon color adjusted for better visibility */}
+                <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </li>
+              {/* Joining Date - Moved here and now shows both date and time since joining */}
+              <li
+                className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
+                onClick={() => handleSettingClick(
+                  "Joining Date",
+                  `${joining_date} (${timeSinceJoining})` // Combine the date and the time since joining
+                )}
+              >
+                <span className="text-neutral-800">Joining Date</span>
                 <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
                 </svg>
