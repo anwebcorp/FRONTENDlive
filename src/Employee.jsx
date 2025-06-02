@@ -2,8 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // A generic component to display setting details, simulating an iPhone detail view
-// This component will always be rendered, but its position controlled by CSS transform
 function SettingDetail({ title, content, onBack, isVisible }) {
+  const displayContent = content || "N/A";
+
+  // Determine if it's the "Joining Date" for special formatting
+  const isJoiningDate = title === "Joining Date";
+
   return (
     <div
       className={`fixed inset-0 bg-neutral-50 z-20 flex flex-col font-sans
@@ -12,7 +16,6 @@ function SettingDetail({ title, content, onBack, isVisible }) {
     >
       {/* Top Navigation Bar for Detail View */}
       <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-center">
-        {/* Title is now darker for better visibility */}
         <h1 className="text-xl font-semibold text-neutral-900 text-center">{title}</h1>
       </div>
 
@@ -20,11 +23,24 @@ function SettingDetail({ title, content, onBack, isVisible }) {
       <div className="flex-1 overflow-y-auto pt-4 pb-8">
         <div className="mx-4 rounded-xl overflow-hidden shadow-sm">
           <ul className="bg-white divide-y divide-neutral-200">
-            <li className="flex justify-between items-center py-3 px-4">
-              {/* Text is darker for better visibility */}
-              <span className="text-neutral-800">{title}</span>
-              {/* Content text is also darker for better visibility */}
-              <span className="text-neutral-600">{content}</span>
+            <li
+              className={`flex py-3 px-4 ${isJoiningDate ? 'flex-col items-start' : 'justify-between items-center'}`}
+              // Dynamically adjust flex direction and alignment based on isJoiningDate
+            >
+              <span className={`text-neutral-800 flex-shrink-0 ${isJoiningDate ? 'mb-1' : 'mr-4'}`}>
+                {title}
+              </span>
+              {/* Conditional rendering for content alignment */}
+              {isJoiningDate ? (
+                <span
+                  className="text-neutral-600 text-left break-words flex-grow" // Always left-aligned for joining date
+                  dangerouslySetInnerHTML={{ __html: displayContent }}
+                />
+              ) : (
+                <span className="text-neutral-600 text-right break-words max-w-[70%]"> {/* Default right alignment for others */}
+                  {displayContent}
+                </span>
+              )}
             </li>
           </ul>
         </div>
@@ -48,7 +64,7 @@ export default function Employee({ user, setUser }) {
   const [imageUrl, setImageUrl] = useState("");
   const [error, setError] = useState(null);
   const [selectedSetting, setSelectedSetting] = useState(null);
-  const [timeSinceJoining, setTimeSinceJoining] = useState("N/A"); // This holds the descriptive string
+  const [timeSinceJoining, setTimeSinceJoining] = useState("N/A");
 
   const handleLogout = () => {
     setUser(null);
@@ -62,7 +78,7 @@ export default function Employee({ user, setUser }) {
   const phone_number = user?.phone_number || "N/A";
   const address = user?.address || "N/A";
   const job_title = user?.Job_title || user?.job_title || "N/A";
-  const joining_date = user?.joining_date || "N/A"; // This holds the actual date
+  const joining_date = user?.joining_date || "N/A";
   const employee_id = user?.employee_id || "N/A";
 
   useEffect(() => {
@@ -168,7 +184,6 @@ export default function Employee({ user, setUser }) {
                 )}
               </div>
               <div className="text-center">
-                {/* User name is darker for better visibility */}
                 <h2 className="text-2xl font-bold text-neutral-900 mb-1">{name}</h2>
                 <p className="text-neutral-600 text-sm">Employee ID: {employee_id}</p>
               </div>
@@ -183,9 +198,7 @@ export default function Employee({ user, setUser }) {
                 className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
                 onClick={() => handleSettingClick("CNIC", cnic)}
               >
-                {/* Text is darker for better visibility */}
                 <span className="text-neutral-800">CNIC</span>
-                {/* Icon color adjusted for better visibility */}
                 <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
                 </svg>
@@ -195,9 +208,7 @@ export default function Employee({ user, setUser }) {
                 className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
                 onClick={() => handleSettingClick("Phone Number", phone_number)}
               >
-                {/* Text is darker for better visibility */}
                 <span className="text-neutral-800">Phone Number</span>
-                {/* Icon color adjusted for better visibility */}
                 <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
                 </svg>
@@ -207,9 +218,7 @@ export default function Employee({ user, setUser }) {
                 className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
                 onClick={() => handleSettingClick("Address", address)}
               >
-                {/* Text is darker for better visibility */}
                 <span className="text-neutral-800">Address</span>
-                {/* Icon color adjusted for better visibility */}
                 <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
                 </svg>
@@ -219,19 +228,17 @@ export default function Employee({ user, setUser }) {
                 className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
                 onClick={() => handleSettingClick("Job Title", job_title)}
               >
-                {/* Text is darker for better visibility */}
                 <span className="text-neutral-800">Job Title</span>
-                {/* Icon color adjusted for better visibility */}
                 <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
                 </svg>
               </li>
-              {/* Joining Date - Moved here and now shows both date and time since joining */}
+              {/* Joining Date - Content prepared for HTML rendering */}
               <li
                 className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
                 onClick={() => handleSettingClick(
                   "Joining Date",
-                  `${joining_date} (${timeSinceJoining})` // Combine the date and the time since joining
+                  `<strong>${joining_date}</strong><br /><span class="text-sm">${timeSinceJoining}</span>` // Added text-sm to timeSinceJoining
                 )}
               >
                 <span className="text-neutral-800">Joining Date</span>
@@ -250,9 +257,7 @@ export default function Employee({ user, setUser }) {
                 className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
                 onClick={() => handleSettingClick("Attendance", "Coming Soon")}
               >
-                {/* Text is darker for better visibility */}
                 <span className="text-neutral-800">Attendance</span>
-                {/* Icon color adjusted for better visibility */}
                 <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
                 </svg>
@@ -262,9 +267,7 @@ export default function Employee({ user, setUser }) {
                 className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
                 onClick={() => handleSettingClick("Payment", "Coming Soon")}
               >
-                {/* Text is darker for better visibility */}
                 <span className="text-neutral-800">Payment</span>
-                {/* Icon color adjusted for better visibility */}
                 <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
                 </svg>
@@ -279,9 +282,7 @@ export default function Employee({ user, setUser }) {
                 className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
                 onClick={() => handleSettingClick("Developer Information", "A&N Corps")}
               >
-                {/* Text is darker for better visibility */}
                 <span className="text-neutral-800">Developer Information</span>
-                {/* Icon color adjusted for better visibility */}
                 <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
                 </svg>
