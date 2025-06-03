@@ -6,6 +6,9 @@ import axiosInstance from './axiosInstance'; // Make sure this path is correct r
 import json from "json-bigint"; // Import json-bigint to handle potential large integers if your API returns them.
                                  // If you don't have this, install it: npm install json-bigint
 
+// Import EmployeeDocuments component
+import EmployeeDocuments from './EmployeeDocuments'; // Make sure this path is correct relative to Admin.jsx
+
 // Import a placeholder image.
 const DEFAULT_AVATAR_PLACEHOLDER = "https://placehold.co/150x150/CCCCCC/FFFFFF?text=NO+IMAGE";
 
@@ -42,6 +45,10 @@ export default function Admin({ user, setUser }) {
     const [currentEmployeeToEdit, setCurrentEmployeeToEdit] = useState(null); // Employee data for the edit form
     const [editEmployeeError, setEditEmployeeError] = useState(null);
     const [editEmployeeSuccess, setEditEmployeeSuccess] = useState(false);
+
+    // New state for managing EmployeeDocuments visibility and data
+    const [showDocuments, setShowDocuments] = useState(false);
+    const [employeeForDocuments, setEmployeeForDocuments] = useState(null);
 
     const navigate = useNavigate();
 
@@ -173,6 +180,21 @@ export default function Admin({ user, setUser }) {
     // This function is only for "Attendance" and "Payment"
     const handleFeatureClick = (feature) => {
         setShowComingSoon(feature);
+    };
+
+    // Handler for managing employee documents
+    const handleManageDocumentsClick = (employee) => {
+        setEmployeeForDocuments(employee);
+        setShowDocuments(true);
+        setSelectedEmployee(null); // Hide detail view when opening documents view
+    };
+
+    // Handler to go back from employee documents view
+    const handleBackFromDocuments = () => {
+        setShowDocuments(false);
+        setEmployeeForDocuments(null);
+        // Optionally, you might want to go back to the employee detail view
+        // if that's the desired flow, e.g., setSelectedEmployee(previousSelectedEmployee);
     };
 
     // New employee form input handlers
@@ -330,7 +352,7 @@ export default function Admin({ user, setUser }) {
     }
 
     // --- Employee Detail View (Inner Component, defined here for single file) ---
-    const EmployeeDetailView = ({ employee, onBack, isVisible }) => {
+    const EmployeeDetailView = ({ employee, onBack, isVisible, onManageDocuments }) => {
         if (!employee) {
             return null;
         }
@@ -424,18 +446,7 @@ export default function Admin({ user, setUser }) {
                                     <span className="text-neutral-600">{employee.email}</span>
                                 </li>
                             )}
-                            {employee.first_name && (
-                                <li className="flex justify-between items-center py-3 px-4">
-                                    <span className="text-neutral-800 font-medium">First Name:</span>
-                                    <span className="text-neutral-600">{employee.first_name}</span>
-                                </li>
-                            )}
-                            {employee.last_name && (
-                                <li className="flex justify-between items-center py-3 px-4">
-                                    <span className="text-neutral-800 font-medium">Last Name:</span>
-                                    <span className="text-neutral-600">{employee.last_name}</span>
-                                </li>
-                            )}
+                          
                         </ul>
                     </div>
 
@@ -454,9 +465,18 @@ export default function Admin({ user, setUser }) {
                                         setShowEditForm(true);
                                         setSelectedEmployee(null); // Hide detail view when opening edit form
                                     }}
-                                    className="w-full py-3 text-green-600 font-normal text-lg hover:bg-neutral-100 active:bg-neutral-200 transition-colors duration-100 ease-in-out"
+                                    className="w-full py-3 text-blue-600 font-normal text-lg hover:bg-neutral-100 active:bg-neutral-200 transition-colors duration-100 ease-in-out"
                                 >
                                     Edit Employee
+                                </button>
+                            </li>
+                            {/* New button for managing documents */}
+                            <li>
+                                <button
+                                    onClick={() => onManageDocuments(employee)}
+                                    className="w-full py-3 text-blue-600 font-normal text-lg hover:bg-neutral-100 active:bg-neutral-200 transition-colors duration-100 ease-in-out"
+                                >
+                                    Manage Documents
                                 </button>
                             </li>
                             <li>
@@ -486,7 +506,7 @@ export default function Admin({ user, setUser }) {
     return (
         <div className="min-h-screen bg-neutral-50 font-sans text-neutral-800 relative overflow-hidden">
             {/* Main Admin Dashboard View */}
-            <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedEmployee || showCreateForm || showEditForm ? '-translate-x-full' : 'translate-x-0'}`}>
+            <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedEmployee || showCreateForm || showEditForm || showDocuments ? '-translate-x-full' : 'translate-x-0'}`}>
                 {/* Top Navigation Bar */}
                 <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-between">
                     <div className="w-10"></div>
@@ -516,7 +536,7 @@ export default function Admin({ user, setUser }) {
                     </div>
 
                     {/* Employee Grid with Add New Employee Button */}
-                    <div className={`w-full max-w-6xl mx-auto grid grid-cols-2 gap-4 ${selectedEmployee ? "pointer-events-none" : ""}`}>
+                    <div className={`w-full max-w-6xl mx-auto grid grid-cols-2 gap-4 ${selectedEmployee || showDocuments ? "pointer-events-none" : ""}`}>
                         {/* Place the 'Add New Employee' button as the first item */}
                         <button
                             key="add-new-employee-button" // Unique key for the button
@@ -561,6 +581,7 @@ export default function Admin({ user, setUser }) {
                 employee={selectedEmployee}
                 onBack={handleBackFromEmployeeDetail}
                 isVisible={!!selectedEmployee}
+                onManageDocuments={handleManageDocumentsClick} // Pass the new handler
             />
 
             {/* Create New Employee Form (Slides in) */}
@@ -785,6 +806,21 @@ export default function Admin({ user, setUser }) {
                     )}
                 </div>
             </div>
+
+            {/* Employee Documents View (Slides in) */}
+            {employeeForDocuments && (
+                <div
+                    className={`fixed inset-0 bg-neutral-50 z-20 flex flex-col font-sans
+                                transition-transform duration-300 ease-out
+                                ${showDocuments ? 'translate-x-0' : 'translate-x-full'}`}
+                >
+                    <EmployeeDocuments
+                        employeeId={employeeForDocuments.id}
+                        employeeName={employeeForDocuments.name}
+                        onBack={handleBackFromDocuments}
+                    />
+                </div>
+            )}
 
             {/* Coming Soon Message (Overlay) - Only for Attendance/Payment */}
             {showComingSoon && (

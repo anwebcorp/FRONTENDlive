@@ -1,5 +1,10 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+// your_react_project/src/pages/Employee.jsx
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+import EmployeeDocs from "./EmployeeDocs";
 
 // A generic component to display setting details, simulating an iPhone detail view
 function SettingDetail({ title, content, onBack, isVisible }) {
@@ -65,6 +70,7 @@ export default function Employee({ user, setUser }) {
   const [error, setError] = useState(null);
   const [selectedSetting, setSelectedSetting] = useState(null);
   const [timeSinceJoining, setTimeSinceJoining] = useState("N/A");
+  const [showDocuments, setShowDocuments] = useState(false); // State to control EmployeeDocuments visibility
 
   const handleLogout = () => {
     setUser(null);
@@ -119,7 +125,7 @@ export default function Employee({ user, setUser }) {
     };
 
     fetchProfileData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user]); // Added user to dependency array to re-fetch if user object changes
 
   const handleSettingClick = (settingName, settingContent) => {
     setSelectedSetting({ title: settingName, content: settingContent });
@@ -127,6 +133,14 @@ export default function Employee({ user, setUser }) {
 
   const handleBackFromDetail = () => {
     setSelectedSetting(null);
+  };
+
+  const handleDocumentsClick = () => {
+    setShowDocuments(true);
+  };
+
+  const handleBackFromDocuments = () => {
+    setShowDocuments(false);
   };
 
   const handleGlobalBack = () => {
@@ -145,8 +159,8 @@ export default function Employee({ user, setUser }) {
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans text-neutral-800 relative overflow-hidden">
-      {/* Main Settings View Container - This slides out when a detail is active */}
-      <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedSetting ? '-translate-x-full' : 'translate-x-0'}`}>
+      {/* Main Settings View Container - This slides out when a detail or documents is active */}
+      <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedSetting || showDocuments ? '-translate-x-full' : 'translate-x-0'}`}>
         {/* Top Navigation Bar Simulation for Main View */}
         <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-between">
           {/* Global Back Button (App History) */}
@@ -252,6 +266,16 @@ export default function Employee({ user, setUser }) {
           {/* New Sections */}
           <div className="mx-4 mb-5 rounded-xl overflow-hidden shadow-sm">
             <ul className="bg-white divide-y divide-neutral-200">
+              {/* Documents - New item */}
+              <li
+                className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
+                onClick={handleDocumentsClick}
+              >
+                <span className="text-neutral-800">Documents</span>
+                <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </li>
               {/* Attendance */}
               <li
                 className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
@@ -315,6 +339,21 @@ export default function Employee({ user, setUser }) {
         onBack={handleBackFromDetail}
         isVisible={!!selectedSetting}
       />
+
+      {/* EmployeeDocuments Component - Slides in when showDocuments is true */}
+      <div className={`fixed inset-0 bg-neutral-50 z-20 flex flex-col font-sans
+                   transition-transform duration-300 ease-out
+                   ${showDocuments ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        {showDocuments && (
+          <EmployeeDocs
+            employeeId={user?.profile?.id || user?.id} // Assuming user.profile.id or user.id holds the employee ID
+            employeeName={user?.name}
+            onBack={handleBackFromDocuments}
+            // readOnly is no longer needed here as EmployeeDocuments.jsx is now permanently read-only
+          />
+        )}
+      </div>
     </div>
   );
 }
