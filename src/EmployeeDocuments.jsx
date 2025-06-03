@@ -6,6 +6,7 @@ import axiosInstance from './axiosInstance'; // Ensure this path is correct rela
 // Define base URL for images based on your Django setup
 const BASE_API_URL = 'http://127.0.0.1:8000';
 
+// eslint-disable-next-line no-unused-vars
 export default function EmployeeDocuments({ employeeId, onBack, employeeName, readOnly }) {
     const [documents, setDocuments] = useState([]);
     const [newDocument, setNewDocument] = useState({ file: null, caption: "" });
@@ -172,11 +173,7 @@ export default function EmployeeDocuments({ employeeId, onBack, employeeName, re
                     Documents
                 </h1>
                 {/* Employee Name for ReadOnly view or general display */}
-                {employeeName && (
-                    <h2 className="text-sm font-normal text-gray-600 text-center absolute left-1/2 -translate-x-1/2 top-10">
-                        {employeeName}
-                    </h2>
-                )}
+               
             </div>
 
             {/* Main Content Area */}

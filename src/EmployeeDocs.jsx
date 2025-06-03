@@ -8,6 +8,7 @@ import axiosInstance from './axiosInstance'; // Ensure this path is correct rela
 // So, the base URL for the Django server is http://127.0.0.1:8000
 const BASE_API_URL = 'http://127.0.0.1:8000';
 
+// eslint-disable-next-line no-unused-vars
 export default function EmployeeDocs({ employeeId, onBack, employeeName }) {
     const [documents, setDocuments] = useState([]);
     const [error, setError] = useState(null);
@@ -35,6 +36,7 @@ export default function EmployeeDocs({ employeeId, onBack, employeeName }) {
         if (employeeId) {
             fetchDocuments();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [employeeId]);
 
     // Handler for image click to zoom
