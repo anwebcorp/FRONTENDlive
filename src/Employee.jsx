@@ -95,7 +95,7 @@ export default function Employee({ user, setUser }) {
         return;
       }
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/profile/", {
+        const response = await fetch("https://naveedemp.pythonanywhere.com/api/profile/", {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
