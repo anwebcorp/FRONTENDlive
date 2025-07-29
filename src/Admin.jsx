@@ -1,14 +1,17 @@
-// your_react_project/src/pages/Admin.jsx
-
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, memo } from "react"; // Import useCallback and memo
 import { useNavigate } from "react-router-dom";
 import axiosInstance from './axiosInstance';
 import json from "json-bigint";
 
 import EmployeeDocuments from './EmployeeDocuments';
+import PayAdmin from './PayAdmin'; // Import PayAdmin component
 
 const DEFAULT_AVATAR_PLACEHOLDER = "https://placehold.co/150x150/CCCCCC/FFFFFF?text=NO+IMAGE";
 const ADMIN_AVATAR_PLACEHOLDER = "https://images.unsplash.com/photo-1531297484001-80022131f5a1?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+
+// Memoize the PayAdmin component if it's not already memoized internally
+// This assumes PayAdmin is a functional component that can be wrapped by React.memo
+const MemoizedPayAdmin = memo(PayAdmin); // Wrap PayAdmin with memo
 
 export default function Admin({ user, setUser }) {
     const [employees, setEmployees] = useState([]);
@@ -34,10 +37,11 @@ export default function Admin({ user, setUser }) {
     const [showDocuments, setShowDocuments] = useState(false);
     const [employeeForDocuments, setEmployeeForDocuments] = useState(null);
 
-    // NEW STATE: To control which specific detail sub-page is shown
     const [showDetailSubPage, setShowDetailSubPage] = useState(null);
-    // NEW STATE: To store the employee currently being viewed in a detail sub-page
     const [employeeForDetailSubPage, setEmployeeForDetailSubPage] = useState(null);
+
+    const [showPaymentPage, setShowPaymentPage] = useState(false);
+    const [employeeForPayment, setEmployeeForPayment] = useState(null);
 
 
     const navigate = useNavigate();
@@ -148,9 +152,11 @@ export default function Admin({ user, setUser }) {
     const handleEmployeeClick = (employee) => {
         setSelectedEmployee(employee);
         setShowComingSoon(null);
-        // Ensure no detail sub-page is open when a new employee is selected
+        // Ensure no detail sub-page or other overlay is open when a new employee is selected
         setShowDetailSubPage(null);
         setEmployeeForDetailSubPage(null);
+        setShowPaymentPage(false); // Close payment page if open
+        setEmployeeForPayment(null); // Clear payment employee
     };
 
     const handleBackFromEmployeeDetail = () => {
@@ -169,9 +175,11 @@ export default function Admin({ user, setUser }) {
         setEmployeeForDocuments(employee);
         setShowDocuments(true);
         setSelectedEmployee(null);
-        // Ensure no detail sub-page is open when managing documents
+        // Ensure no detail sub-page or payment page is open when managing documents
         setShowDetailSubPage(null);
         setEmployeeForDetailSubPage(null);
+        setShowPaymentPage(false);
+        setEmployeeForPayment(null);
     };
 
     const handleBackFromDocuments = () => {
@@ -181,11 +189,12 @@ export default function Admin({ user, setUser }) {
         // setSelectedEmployee(employeeForDocuments); // This would bring back the employee detail view
     };
 
-    // NEW HANDLERS FOR DETAIL SUB-PAGES
     const handleDetailClick = (employee, detailKey) => {
         setEmployeeForDetailSubPage(employee);
         setShowDetailSubPage(detailKey);
         setSelectedEmployee(null); // Hide the main employee detail view
+        setShowPaymentPage(false); // Close payment page if open
+        setEmployeeForPayment(null); // Clear payment employee
     };
 
     const handleBackFromDetailSubPage = () => {
@@ -193,7 +202,27 @@ export default function Admin({ user, setUser }) {
         setSelectedEmployee(employeeForDetailSubPage); // Go back to the main employee detail view
         setEmployeeForDetailSubPage(null); // Clear the employee for sub-page
     };
-    // END NEW HANDLERS
+
+    // NEW HANDLER for Payment page - Wrapped in useCallback
+    const handleManagePaymentClick = useCallback((employee) => {
+        setEmployeeForPayment(employee);
+        setShowPaymentPage(true);
+        setSelectedEmployee(null); // Hide the main employee detail view
+        setShowDocuments(false); // Hide documents view if open
+        setEmployeeForDocuments(null); // Clear documents employee
+        setShowDetailSubPage(null); // Hide sub-detail view if open
+        setEmployeeForDetailSubPage(null); // Clear sub-detail employee
+        setShowComingSoon(null); // Hide coming soon if open
+    }, []); // No dependencies for this one as it only sets states
+
+    // NEW HANDLER for Payment page - Wrapped in useCallback
+    const handleBackFromPayment = useCallback(() => {
+        setShowPaymentPage(false);
+        setEmployeeForPayment(null);
+        // Optionally, go back to the employee detail view after payment
+        // setSelectedEmployee(employeeForPayment);
+    }, []); // No dependencies for this one as it only sets states
+
 
     const handleNewEmployeeInputChange = (e) => {
         const { name, value } = e.target;
@@ -325,14 +354,12 @@ export default function Admin({ user, setUser }) {
         );
     }
 
-    // NEW: Reusable DetailSubPage Component
     const DetailSubPage = ({ employee, detailKey, onBack }) => {
         if (!employee || !detailKey) return null;
 
         const label = detailKey.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
         let value = employee[detailKey];
 
-        // Special handling for time_since_joining to be displayed under joining_date
         if (detailKey === 'joining_date' && employee.time_since_joining) {
             value = (
                 <>
@@ -344,7 +371,6 @@ export default function Admin({ user, setUser }) {
             );
         }
 
-        // Handle user account details (username, email, first_name, last_name)
         if (['username', 'email', 'first_name', 'last_name'].includes(detailKey)) {
             value = employee[detailKey];
         }
@@ -356,7 +382,6 @@ export default function Admin({ user, setUser }) {
                                 transition-transform duration-300 ease-out
                                 ${showDetailSubPage === detailKey ? 'translate-x-0' : 'translate-x-full'}`}
             >
-                {/* Top Navigation Bar for Sub-Detail View */}
                 <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-start">
                     <button
                         onClick={onBack}
@@ -372,7 +397,6 @@ export default function Admin({ user, setUser }) {
                     </h1>
                 </div>
 
-                {/* Content for the specific detail */}
                 <div className="flex-1 overflow-y-auto pt-4 pb-8 flex flex-col items-center justify-center">
                     <div className="bg-white p-6 rounded-xl shadow-sm mx-4 w-11/12 max-w-md text-center">
                         <p className="text-neutral-800 text-lg font-semibold mb-2">{label}:</p>
@@ -383,19 +407,16 @@ export default function Admin({ user, setUser }) {
         );
     };
 
-    // --- Employee Detail View (Inner Component, defined here for single file) ---
-    const EmployeeDetailView = ({ employee, onBack, isVisible, onManageDocuments, onDetailClick }) => {
+    const EmployeeDetailView = ({ employee, onBack, isVisible, onManageDocuments, onDetailClick, onManagePayment }) => {
         if (!employee) {
             return null;
         }
 
-        // Define which fields should be clickable buttons
         const clickableFields = [
             'name', 'cnic', 'phone_number', 'address', 'Job_title',
             'employee_id', 'joining_date', 'username', 'email', 'first_name', 'last_name'
         ];
 
-        // Filter out fields that are handled separately or not to be displayed as clickable items
         const displayData = Object.entries(employee).filter(([key]) =>
             !['user', 'id', 'photo', 'time_since_joining'].includes(key) && clickableFields.includes(key)
         );
@@ -406,7 +427,6 @@ export default function Admin({ user, setUser }) {
                                 transition-transform duration-300 ease-out
                                 ${isVisible ? 'translate-x-0' : 'translate-x-full'}`}
             >
-                {/* Top Navigation Bar for Detail View */}
                 <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-start">
                     <button
                         onClick={onBack}
@@ -422,7 +442,6 @@ export default function Admin({ user, setUser }) {
                     </h1>
                 </div>
 
-                {/* Employee Detail Content */}
                 <div className="flex-1 overflow-y-auto pt-4 pb-8">
                     <div className="mx-4 mb-5 rounded-xl overflow-hidden shadow-sm">
                         <div className="bg-white p-6 flex flex-col items-center justify-center">
@@ -440,11 +459,9 @@ export default function Admin({ user, setUser }) {
                         </div>
                     </div>
 
-                    {/* Dynamic Detail List - Now with clickable items */}
                     <div className="mx-4 mb-5 rounded-xl overflow-hidden shadow-sm">
                         <ul className="bg-white divide-y divide-neutral-200">
                             {displayData.map(([key, value]) => {
-                                // Exclude employee_id as it's already shown under the name
                                 if (key === 'employee_id') return null;
 
                                 const displayLabel = key.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -467,7 +484,6 @@ export default function Admin({ user, setUser }) {
                         </ul>
                     </div>
 
-                    {/* Action Buttons (unchanged) */}
                     <div className="mx-4 mt-5 rounded-xl overflow-hidden shadow-sm">
                         <ul className="bg-white divide-y divide-neutral-200">
                             <li>
@@ -503,7 +519,7 @@ export default function Admin({ user, setUser }) {
                             </li>
                             <li>
                                 <button
-                                    onClick={() => handleFeatureClick("Payment")}
+                                    onClick={() => onManagePayment(employee)}
                                     className="w-full py-3 text-blue-600 font-normal text-lg hover:bg-neutral-100 active:bg-neutral-200 transition-colors duration-100 ease-in-out"
                                 >
                                     Payment
@@ -515,13 +531,10 @@ export default function Admin({ user, setUser }) {
             </div>
         );
     };
-    // --- End of Employee Detail View ---
 
     return (
         <div className="min-h-screen bg-neutral-50 font-sans text-neutral-800 relative overflow-hidden">
-            {/* Main Admin Dashboard View */}
-            <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedEmployee || showCreateForm || showEditForm || showDocuments || showDetailSubPage ? '-translate-x-full' : 'translate-x-0'}`}>
-                {/* Top Navigation Bar */}
+            <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedEmployee || showCreateForm || showEditForm || showDocuments || showDetailSubPage || showPaymentPage ? '-translate-x-full' : 'translate-x-0'}`}>
                 <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-between">
                     <div className="w-10"></div>
                     <h1 className="text-xl font-normal text-neutral-500 text-center absolute left-1/2 -translate-x-1/2">
@@ -541,7 +554,6 @@ export default function Admin({ user, setUser }) {
                     </button>
                 </div>
 
-                {/* Main Content Area */}
                 <div className="pt-4 pb-8 h-[calc(100vh-60px)] overflow-y-auto">
                     <div className="mx-4 mb-5 rounded-xl overflow-hidden text-center">
                         <div className="flex-shrink-0 mb-4 flex justify-center">
@@ -557,10 +569,9 @@ export default function Admin({ user, setUser }) {
                         </p>
                     </div>
 
-                    {/* Employee Grid with Add New Employee Button */}
                     <div className="w-full max-w-6xl mx-auto p-6 bg-neutral-100 rounded-xl shadow-lg border border-neutral-200 mt-6">
                         <h2 className="text-xl font-semibold text-neutral-800 mb-4 pb-2 border-b border-neutral-200">Employee List</h2>
-                        <div className={`grid grid-cols-2 gap-4 ${selectedEmployee || showDocuments || showDetailSubPage ? "pointer-events-none" : ""}`}>
+                        <div className={`grid grid-cols-2 gap-4 ${selectedEmployee || showDocuments || showDetailSubPage || showPaymentPage ? "pointer-events-none" : ""}`}>
                             <button
                                 key="add-new-employee-button"
                                 onClick={() => setShowCreateForm(true)}
@@ -599,22 +610,20 @@ export default function Admin({ user, setUser }) {
                 </div>
             </div>
 
-            {/* Employee Detail Page (Slides in) */}
             <EmployeeDetailView
                 employee={selectedEmployee}
                 onBack={handleBackFromEmployeeDetail}
-                isVisible={!!selectedEmployee && !showDetailSubPage} // Hide if a sub-detail page is open
+                isVisible={!!selectedEmployee && !showDetailSubPage && !showPaymentPage}
                 onManageDocuments={handleManageDocumentsClick}
-                onDetailClick={handleDetailClick} // Pass the new handler
+                onDetailClick={handleDetailClick}
+                onManagePayment={handleManagePaymentClick}
             />
 
-            {/* Create New Employee Form (Slides in) */}
             <div
                 className={`fixed inset-0 bg-neutral-50 z-20 flex flex-col font-sans
                                 transition-transform duration-300 ease-out
                                 ${showCreateForm ? 'translate-x-0' : 'translate-x-full'}`}
             >
-                {/* Top Navigation Bar for Create Form */}
                 <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-start">
                     <button
                         onClick={() => { setShowCreateForm(false); setCreateEmployeeError(null); setCreateEmployeeSuccess(false); }}
@@ -630,7 +639,6 @@ export default function Admin({ user, setUser }) {
                     </h1>
                 </div>
 
-                {/* Create Employee Form Content */}
                 <div className="flex-1 overflow-y-auto pt-4 pb-8">
                     {createEmployeeError && (
                         <p className="text-red-600 text-center mb-4 text-sm px-4">{createEmployeeError}</p>
@@ -716,13 +724,11 @@ export default function Admin({ user, setUser }) {
                 </div>
             </div>
 
-            {/* Edit Employee Form (Slides in) */}
             <div
                 className={`fixed inset-0 bg-neutral-50 z-20 flex flex-col font-sans
                                 transition-transform duration-300 ease-out
                                 ${showEditForm ? 'translate-x-0' : 'translate-x-full'}`}
             >
-                {/* Top Navigation Bar for Edit Form */}
                 <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-start">
                     <button
                         onClick={() => { setShowEditForm(false); setEditEmployeeError(null); setEditEmployeeSuccess(false); setCurrentEmployeeToEdit(null); }}
@@ -738,7 +744,6 @@ export default function Admin({ user, setUser }) {
                     </h1>
                 </div>
 
-                {/* Edit Employee Form Content */}
                 <div className="flex-1 overflow-y-auto pt-4 pb-8">
                     {editEmployeeError && (
                         <p className="text-red-600 text-center mb-4 text-sm px-4">{editEmployeeError}</p>
@@ -824,7 +829,6 @@ export default function Admin({ user, setUser }) {
                 </div>
             </div>
 
-            {/* Employee Documents View (Slides in) */}
             {employeeForDocuments && (
                 <div
                     className={`fixed inset-0 bg-neutral-50 z-20 flex flex-col font-sans
@@ -839,7 +843,6 @@ export default function Admin({ user, setUser }) {
                 </div>
             )}
 
-            {/* NEW: Render DetailSubPage for specific employee details */}
             {showDetailSubPage && employeeForDetailSubPage && (
                 <DetailSubPage
                     employee={employeeForDetailSubPage}
@@ -848,8 +851,15 @@ export default function Admin({ user, setUser }) {
                 />
             )}
 
-            {/* Coming Soon Message (Overlay) - Only for Attendance/Payment */}
-            {showComingSoon && (
+            {showPaymentPage && employeeForPayment && (
+                <MemoizedPayAdmin // Use the memoized component here
+                    employeeId={employeeForPayment.id}
+                    employeeName={employeeForPayment.name}
+                    onBack={handleBackFromPayment}
+                />
+            )}
+
+            {showComingSoon && showComingSoon === "Attendance" && (
                 <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-30">
                     <div className="bg-white p-8 rounded-xl shadow-xl flex flex-col items-center">
                         <svg

@@ -20,40 +20,46 @@ export default function Login({ setUser }) {
 
       const { token } = response.data;
       let userProfile = null;
-      const allProfiles = response.data.profiles;
+      const allProfiles = response.data.profiles; // This will contain all profiles
 
-      const ADMIN_ID = 18;
+      // Determine if the user is an admin based on the backend message
+      const isUserAdminFromBackend = response.data.msg === 'Admin Login Successful';
 
       if (response.data.profile) {
-        userProfile = response.data.profile;
+        // If a singular 'profile' object is directly returned, use that.
+        // Add the isAdmin flag to the profile
+        userProfile = { ...response.data.profile, isAdmin: isUserAdminFromBackend };
         console.log("Found singular 'profile' in response.");
-      }
-      else if (allProfiles && allProfiles.length > 0) {
-        userProfile = allProfiles.find(p => p.id === ADMIN_ID);
+      } else if (allProfiles && allProfiles.length > 0) {
+        // If no singular 'profile' but 'profiles' array exists,
+        // assume the first profile in the array is the logged-in user's.
+        // Add the isAdmin flag to the profile
+        userProfile = { ...allProfiles[0], isAdmin: isUserAdminFromBackend };
+        console.log(`Assumed logged-in user profile is the first in 'profiles' array. ID: ${userProfile?.id}`);
 
-        if (userProfile) {
-          console.log(`Found plural 'profiles' in response. Identified user profile with ID: ${userProfile.id}.`);
-        } else {
-          console.warn(`Admin profile with ID ${ADMIN_ID} not found in the 'profiles' array.`);
-        }
+        // This console.warn is now less critical as we're relying on the `isAdmin` flag
+        // if (userProfile && userProfile.id !== 18 && isUserAdminFromBackend) {
+        //   console.warn(`Logged-in admin's profile ID (${userProfile.id}) does not match hardcoded ADMIN_ID (18). Relying on 'isAdmin' flag.`);
+        // }
       }
 
+      // Check if essential data (tokens and a valid userProfile) is present
       if (token && token.access && token.refresh && userProfile && typeof userProfile.id === "number") {
         localStorage.setItem("accessToken", token.access);
         localStorage.setItem("refreshToken", token.refresh);
-        localStorage.setItem("user", JSON.stringify(userProfile));
-        localStorage.setItem("allProfiles", JSON.stringify(allProfiles));
+        localStorage.setItem("user", JSON.stringify(userProfile)); // Store user with isAdmin flag
+        localStorage.setItem("allProfiles", JSON.stringify(allProfiles)); // Store all profiles for admin view
 
         console.log("Tokens, user, and all profiles stored in localStorage.");
-        console.log("User ID from API:", userProfile.id);
+        console.log("User ID from API (identified):", userProfile.id);
+        console.log("Is User Admin (identified):", userProfile.isAdmin);
+
 
         setUser(userProfile);
 
-        console.log("Admin ID constant:", ADMIN_ID);
-        console.log("Is user an admin? (userProfile.id === ADMIN_ID):", userProfile.id === ADMIN_ID);
-
-        if (userProfile.id === ADMIN_ID) {
-          console.log("Login Successful as Admin. Navigating to /admin");
+        // Determine navigation based on the isAdmin flag
+        if (isUserAdminFromBackend) {
+          console.log("Login Successful as Admin (based on backend message). Navigating to /admin");
           navigate("/admin", { replace: true });
         } else {
           console.log("Login Successful as Employee. Navigating to /employee");
