@@ -4,7 +4,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import EmployeeDocs from "./EmployeeDocs";
+import EmployeeDocs from "./EmployeeDocs.jsx"; // Updated import path
+import EmployeePayment from "./EmployeePayment.jsx"; // Updated import path
 
 // A generic component to display setting details, simulating an iPhone detail view
 function SettingDetail({ title, content, onBack, isVisible }) {
@@ -71,6 +72,7 @@ export default function Employee({ user, setUser }) {
   const [selectedSetting, setSelectedSetting] = useState(null);
   const [timeSinceJoining, setTimeSinceJoining] = useState("N/A");
   const [showDocuments, setShowDocuments] = useState(false); // State to control EmployeeDocuments visibility
+  const [showPayment, setShowPayment] = useState(false); // New state to control EmployeePayment visibility
 
   const handleLogout = () => {
     setUser(null);
@@ -143,6 +145,14 @@ export default function Employee({ user, setUser }) {
     setShowDocuments(false);
   };
 
+  const handlePaymentClick = () => { // New handler for Payment
+    setShowPayment(true);
+  };
+
+  const handleBackFromPayment = () => { // New handler to go back from Payment
+    setShowPayment(false);
+  };
+
   const handleGlobalBack = () => {
     navigate(-1);
   };
@@ -159,8 +169,8 @@ export default function Employee({ user, setUser }) {
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans text-neutral-800 relative overflow-hidden">
-      {/* Main Settings View Container - This slides out when a detail or documents is active */}
-      <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedSetting || showDocuments ? '-translate-x-full' : 'translate-x-0'}`}>
+      {/* Main Settings View Container - This slides out when a detail, documents, or payment is active */}
+      <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedSetting || showDocuments || showPayment ? '-translate-x-full' : 'translate-x-0'}`}>
         {/* Top Navigation Bar Simulation for Main View */}
         <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-between">
           {/* Global Back Button (App History) */}
@@ -289,7 +299,7 @@ export default function Employee({ user, setUser }) {
               {/* Payment */}
               <li
                 className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
-                onClick={() => handleSettingClick("Payment", "Coming Soon")}
+                onClick={handlePaymentClick} // Changed to new handler
               >
                 <span className="text-neutral-800">Payment</span>
                 <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -351,6 +361,20 @@ export default function Employee({ user, setUser }) {
             employeeName={user?.name}
             onBack={handleBackFromDocuments}
             // readOnly is no longer needed here as EmployeeDocuments.jsx is now permanently read-only
+          />
+        )}
+      </div>
+
+      {/* EmployeePayment Component - Slides in when showPayment is true */}
+      <div className={`fixed inset-0 bg-neutral-50 z-20 flex flex-col font-sans
+                   transition-transform duration-300 ease-out
+                   ${showPayment ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        {showPayment && (
+          <EmployeePayment
+            employeeId={user?.profile?.id || user?.id} // Pass employeeId to EmployeePayment
+            employeeName={user?.name} // Pass employeeName to EmployeePayment
+            onBack={handleBackFromPayment}
           />
         )}
       </div>
