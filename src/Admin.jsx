@@ -5,6 +5,7 @@ import json from "json-bigint";
 
 import EmployeeDocuments from './EmployeeDocuments';
 import PayAdmin from './PayAdmin'; // Import PayAdmin component
+import Attendance from './Attendance'; // Import Attendance component
 
 const DEFAULT_AVATAR_PLACEHOLDER = "https://placehold.co/150x150/CCCCCC/FFFFFF?text=NO+IMAGE";
 const ADMIN_AVATAR_PLACEHOLDER = "https://images.unsplash.com/photo-1531297484001-80022131f5a1?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
@@ -42,6 +43,9 @@ export default function Admin({ user, setUser }) {
 
     const [showPaymentPage, setShowPaymentPage] = useState(false);
     const [employeeForPayment, setEmployeeForPayment] = useState(null);
+
+    const [showAttendancePage, setShowAttendancePage] = useState(false); // New state for Attendance page
+    const [employeeForAttendance, setEmployeeForAttendance] = useState(null); // New state for Attendance employee
 
 
     const navigate = useNavigate();
@@ -157,6 +161,8 @@ export default function Admin({ user, setUser }) {
         setEmployeeForDetailSubPage(null);
         setShowPaymentPage(false); // Close payment page if open
         setEmployeeForPayment(null); // Clear payment employee
+        setShowAttendancePage(false); // Close attendance page if open
+        setEmployeeForAttendance(null); // Clear attendance employee
     };
 
     const handleBackFromEmployeeDetail = () => {
@@ -167,6 +173,7 @@ export default function Admin({ user, setUser }) {
         setEmployeeForDetailSubPage(null);
     };
 
+    // eslint-disable-next-line no-unused-vars
     const handleFeatureClick = (feature) => {
         setShowComingSoon(feature);
     };
@@ -175,11 +182,13 @@ export default function Admin({ user, setUser }) {
         setEmployeeForDocuments(employee);
         setShowDocuments(true);
         setSelectedEmployee(null);
-        // Ensure no detail sub-page or payment page is open when managing documents
+        // Ensure no detail sub-page or payment page or attendance page is open when managing documents
         setShowDetailSubPage(null);
         setEmployeeForDetailSubPage(null);
         setShowPaymentPage(false);
         setEmployeeForPayment(null);
+        setShowAttendancePage(false);
+        setEmployeeForAttendance(null);
     };
 
     const handleBackFromDocuments = () => {
@@ -195,6 +204,8 @@ export default function Admin({ user, setUser }) {
         setSelectedEmployee(null); // Hide the main employee detail view
         setShowPaymentPage(false); // Close payment page if open
         setEmployeeForPayment(null); // Clear payment employee
+        setShowAttendancePage(false); // Close attendance page if open
+        setEmployeeForAttendance(null); // Clear attendance employee
     };
 
     const handleBackFromDetailSubPage = () => {
@@ -212,6 +223,8 @@ export default function Admin({ user, setUser }) {
         setEmployeeForDocuments(null); // Clear documents employee
         setShowDetailSubPage(null); // Hide sub-detail view if open
         setEmployeeForDetailSubPage(null); // Clear sub-detail employee
+        setShowAttendancePage(false); // Hide attendance page if open
+        setEmployeeForAttendance(null); // Clear attendance employee
         setShowComingSoon(null); // Hide coming soon if open
     }, []); // No dependencies for this one as it only sets states
 
@@ -223,6 +236,27 @@ export default function Admin({ user, setUser }) {
         // setSelectedEmployee(employeeForPayment);
     }, []); // No dependencies for this one as it only sets states
 
+    // NEW HANDLER for Attendance page
+    const handleManageAttendanceClick = useCallback((employee) => {
+        setEmployeeForAttendance(employee);
+        setShowAttendancePage(true);
+        setSelectedEmployee(null); // Hide the main employee detail view
+        setShowDocuments(false); // Hide documents view if open
+        setEmployeeForDocuments(null); // Clear documents employee
+        setShowDetailSubPage(null); // Hide sub-detail view if open
+        setEmployeeForDetailSubPage(null); // Clear sub-detail employee
+        setShowPaymentPage(false); // Hide payment page if open
+        setEmployeeForPayment(null); // Clear payment employee
+        setShowComingSoon(null); // Hide coming soon if open
+    }, []);
+
+    // NEW HANDLER for Attendance page
+    const handleBackFromAttendance = useCallback(() => {
+        setShowAttendancePage(false);
+        setEmployeeForAttendance(null);
+        // Optionally, go back to the employee detail view after attendance
+        // setSelectedEmployee(employeeForAttendance);
+    }, []);
 
     const handleNewEmployeeInputChange = (e) => {
         const { name, value } = e.target;
@@ -407,7 +441,7 @@ export default function Admin({ user, setUser }) {
         );
     };
 
-    const EmployeeDetailView = ({ employee, onBack, isVisible, onManageDocuments, onDetailClick, onManagePayment }) => {
+    const EmployeeDetailView = ({ employee, onBack, isVisible, onManageDocuments, onDetailClick, onManagePayment, onManageAttendance }) => {
         if (!employee) {
             return null;
         }
@@ -511,7 +545,7 @@ export default function Admin({ user, setUser }) {
                             </li>
                             <li>
                                 <button
-                                    onClick={() => handleFeatureClick("Attendance")}
+                                    onClick={() => onManageAttendance(employee)}
                                     className="w-full py-3 text-blue-600 font-normal text-lg hover:bg-neutral-100 active:bg-neutral-200 transition-colors duration-100 ease-in-out"
                                 >
                                     Attendance
@@ -534,7 +568,7 @@ export default function Admin({ user, setUser }) {
 
     return (
         <div className="min-h-screen bg-neutral-50 font-sans text-neutral-800 relative overflow-hidden">
-            <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedEmployee || showCreateForm || showEditForm || showDocuments || showDetailSubPage || showPaymentPage ? '-translate-x-full' : 'translate-x-0'}`}>
+            <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedEmployee || showCreateForm || showEditForm || showDocuments || showDetailSubPage || showPaymentPage || showAttendancePage ? '-translate-x-full' : 'translate-x-0'}`}>
                 <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-between">
                     <div className="w-10"></div>
                     <h1 className="text-xl font-normal text-neutral-500 text-center absolute left-1/2 -translate-x-1/2">
@@ -571,7 +605,7 @@ export default function Admin({ user, setUser }) {
 
                     <div className="w-full max-w-6xl mx-auto p-6 bg-neutral-100 rounded-xl shadow-lg border border-neutral-200 mt-6">
                         <h2 className="text-xl font-semibold text-neutral-800 mb-4 pb-2 border-b border-neutral-200">Employee List</h2>
-                        <div className={`grid grid-cols-2 gap-4 ${selectedEmployee || showDocuments || showDetailSubPage || showPaymentPage ? "pointer-events-none" : ""}`}>
+                        <div className={`grid grid-cols-2 gap-4 ${selectedEmployee || showDocuments || showDetailSubPage || showPaymentPage || showAttendancePage ? "pointer-events-none" : ""}`}>
                             <button
                                 key="add-new-employee-button"
                                 onClick={() => setShowCreateForm(true)}
@@ -613,10 +647,11 @@ export default function Admin({ user, setUser }) {
             <EmployeeDetailView
                 employee={selectedEmployee}
                 onBack={handleBackFromEmployeeDetail}
-                isVisible={!!selectedEmployee && !showDetailSubPage && !showPaymentPage}
+                isVisible={!!selectedEmployee && !showDetailSubPage && !showPaymentPage && !showAttendancePage}
                 onManageDocuments={handleManageDocumentsClick}
                 onDetailClick={handleDetailClick}
                 onManagePayment={handleManagePaymentClick}
+                onManageAttendance={handleManageAttendanceClick} // Pass the new handler
             />
 
             <div
@@ -857,6 +892,21 @@ export default function Admin({ user, setUser }) {
                     employeeName={employeeForPayment.name}
                     onBack={handleBackFromPayment}
                 />
+            )}
+
+            {showAttendancePage && employeeForAttendance && (
+                <div
+                    className={`fixed inset-0 bg-neutral-50 z-20 flex flex-col font-sans
+                                transition-transform duration-300 ease-out
+                                ${showAttendancePage ? 'translate-x-0' : 'translate-x-full'}`}
+                >
+                    {/* Attendance component rendered here */}
+                    <Attendance
+                        employeeId={employeeForAttendance.id}
+                        employeeName={employeeForAttendance.name}
+                        onBack={handleBackFromAttendance}
+                    />
+                </div>
             )}
 
             {showComingSoon && showComingSoon === "Attendance" && (
