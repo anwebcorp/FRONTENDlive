@@ -1,3 +1,5 @@
+// your_react_project/src/pages/Attendance.jsx
+
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axiosInstance from "./axiosInstance"; // Use the provided axiosInstance
 
@@ -349,7 +351,7 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
   }
 
   return (
-    <div className="container mx-auto p-4 bg-white shadow-lg rounded-xl">
+    <div className="container mx-auto p-4 bg-white shadow-lg rounded-xl max-h-screen overflow-y-auto"> {/* Added max-h-screen and overflow-y-auto */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-gray-800">Attendance Dashboard</h2>
         <button
@@ -481,14 +483,14 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
             {propEmployeeId && propEmployeeName && (
                 <button
                 onClick={() => setViewMode('employeeSummary')}
-                className="bg-purple-700 hover:bg-purple-800 text-white px-7 py-3 rounded-lg shadow-lg transition duration-200 font-bold hover:shadow-xl hover:scale-105" // Bolder, stronger shadow, hover effects
+                className="px-7 py-3 rounded-lg text-white shadow-xl hover:shadow-2xl transition duration-200 font-bold hover:scale-105 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900" // Enhanced styling
                 >
                 View {propEmployeeName}'s Overall Attendance
                 </button>
             )}
             <button
               onClick={() => setViewMode('allSummary')}
-              className="bg-indigo-700 hover:bg-indigo-800 text-white px-7 py-3 rounded-lg shadow-lg transition duration-200 font-bold hover:shadow-xl hover:scale-105" // Bolder, stronger shadow, hover effects
+              className="px-7 py-3 rounded-lg text-white shadow-xl hover:shadow-2xl transition duration-200 font-bold hover:scale-105 bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900" // Enhanced styling
             >
               View All Employees Overall Attendance
             </button>
@@ -654,40 +656,42 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
             <h3 className="text-2xl font-bold text-gray-800 mb-4">
               Attendance History for {selectedEmployeeForModal.name}
             </h3>
-            <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {attendanceRecords[selectedEmployeeForModal.id] &&
-                  Object.entries(attendanceRecords[selectedEmployeeForModal.id])
-                    .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
-                    .map(([date, status]) => (
-                      <tr key={date} className="border-b">
-                        <td className="px-4 py-4 text-gray-700">{formatDateForDisplay(date)}</td>
-                        <td
-                          className={`px-4 py-4 text-center font-semibold ${
-                            status === "Present" ? "text-green-600" : status === "Absent" ? "text-red-600" : "text-yellow-600"
-                          }`}
-                        >
-                          {status}
-                        </td>
-                      </tr>
-                    ))}
-                {(!attendanceRecords[selectedEmployeeForModal.id] || Object.keys(attendanceRecords[selectedEmployeeForModal.id]).length === 0) && (
-                  <tr key="no-records-row">
-                    <td colSpan="2" className="px-4 py-4 text-center text-gray-500">No attendance records found.</td>
+            <div className="overflow-y-auto max-h-[70vh] border border-gray-200 rounded-lg"> {/* Added scrollability */}
+              <table className="min-w-full bg-white">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {attendanceRecords[selectedEmployeeForModal.id] &&
+                    Object.entries(attendanceRecords[selectedEmployeeForModal.id])
+                      .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
+                      .map(([date, status]) => (
+                        <tr key={date} className="border-b">
+                          <td className="px-4 py-4 text-gray-700">{formatDateForDisplay(date)}</td>
+                          <td
+                            className={`px-4 py-4 text-center font-semibold ${
+                              status === "Present" ? "text-green-600" : status === "Absent" ? "text-red-600" : "text-yellow-600"
+                            }`}
+                          >
+                            {status}
+                          </td>
+                        </tr>
+                      ))}
+                  {(!attendanceRecords[selectedEmployeeForModal.id] || Object.keys(attendanceRecords[selectedEmployeeForModal.id]).length === 0) && (
+                    <tr key="no-records-row">
+                      <td colSpan="2" className="px-4 py-4 text-center text-gray-500">No attendance records found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
             <button
               onClick={closeHistoryModal}
               className="mt-4 bg-red-700 hover:bg-red-800 text-white px-5 py-2 rounded-lg shadow-md transition font-bold hover:shadow-lg"

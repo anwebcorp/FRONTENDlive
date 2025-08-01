@@ -146,7 +146,7 @@ function EmployeeAttendance({ employeeId, employeeName, onBack }) {
                                 className="w-full text-left py-3 px-6 hover:bg-neutral-50 flex justify-between items-center text-base font-medium text-neutral-700"
                                 onClick={() => toggleMonth(sheet.id)}
                               >
-                                <span>{sheet.month} - Status: {sheet.status}</span>
+                                <span>{sheet.month}</span> {/* Removed Status: {sheet.status} */}
                                 <svg
                                   className={`w-4 h-4 transition-transform ${expandedMonths[sheet.id] ? 'rotate-90' : ''}`}
                                   fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
@@ -159,10 +159,10 @@ function EmployeeAttendance({ employeeId, employeeName, onBack }) {
                               {expandedMonths[sheet.id] && (
                                 <div className="p-4 pt-0">
                                   {sheet.summary && (
-                                    <div className="flex justify-around text-sm text-neutral-700 mb-3 border-b pb-2">
-                                      <span>Present: {sheet.summary.present}</span>
-                                      <span>Absent: {sheet.summary.absent}</span>
-                                      <span>Leave: {sheet.summary.leave}</span>
+                                    <div className="flex justify-around text-sm mb-3 border-b pb-2">
+                                      <span className="text-green-700">Present: {sheet.summary.present}</span> {/* Changed to text-green-700 */}
+                                      <span className="text-red-700">Absent: {sheet.summary.absent}</span>
+                                      <span className="text-blue-700">Leave: {sheet.summary.leave}</span>
                                     </div>
                                   )}
 
@@ -218,8 +218,6 @@ function EmployeeAttendance({ employeeId, employeeName, onBack }) {
                                       })}
                                     </div>
                                   </div>
-
-                                  {/* Daily Entries List has been removed as per user request */}
                                 </div>
                               )}
                             </div>
