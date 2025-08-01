@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 import EmployeeDocs from "./EmployeeDocs.jsx"; // Updated import path
 import EmployeePayment from "./EmployeePayment.jsx"; // Updated import path
+import EmployeeAttendance from "./EmployeeAttendance.jsx"; // New import
 
 // A generic component to display setting details, simulating an iPhone detail view
 function SettingDetail({ title, content, onBack, isVisible }) {
@@ -73,6 +74,7 @@ export default function Employee({ user, setUser }) {
   const [timeSinceJoining, setTimeSinceJoining] = useState("N/A");
   const [showDocuments, setShowDocuments] = useState(false); // State to control EmployeeDocuments visibility
   const [showPayment, setShowPayment] = useState(false); // New state to control EmployeePayment visibility
+  const [showAttendance, setShowAttendance] = useState(false); // New state to control EmployeeAttendance visibility
 
   const handleLogout = () => {
     setUser(null);
@@ -145,12 +147,20 @@ export default function Employee({ user, setUser }) {
     setShowDocuments(false);
   };
 
-  const handlePaymentClick = () => { // New handler for Payment
+  const handlePaymentClick = () => {
     setShowPayment(true);
   };
 
-  const handleBackFromPayment = () => { // New handler to go back from Payment
+  const handleBackFromPayment = () => {
     setShowPayment(false);
+  };
+
+  const handleAttendanceClick = () => { // New handler for Attendance
+    setShowAttendance(true);
+  };
+
+  const handleBackFromAttendance = () => { // New handler to go back from Attendance
+    setShowAttendance(false);
   };
 
   const handleGlobalBack = () => {
@@ -169,8 +179,8 @@ export default function Employee({ user, setUser }) {
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans text-neutral-800 relative overflow-hidden">
-      {/* Main Settings View Container - This slides out when a detail, documents, or payment is active */}
-      <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedSetting || showDocuments || showPayment ? '-translate-x-full' : 'translate-x-0'}`}>
+      {/* Main Settings View Container - This slides out when a detail, documents, payment, or attendance is active */}
+      <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedSetting || showDocuments || showPayment || showAttendance ? '-translate-x-full' : 'translate-x-0'}`}>
         {/* Top Navigation Bar Simulation for Main View */}
         <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-between">
           {/* Global Back Button (App History) */}
@@ -289,7 +299,7 @@ export default function Employee({ user, setUser }) {
               {/* Attendance */}
               <li
                 className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
-                onClick={() => handleSettingClick("Attendance", "Coming Soon")}
+                onClick={handleAttendanceClick} // Changed to new handler for Attendance
               >
                 <span className="text-neutral-800">Attendance</span>
                 <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -299,7 +309,7 @@ export default function Employee({ user, setUser }) {
               {/* Payment */}
               <li
                 className="flex justify-between items-center py-3 px-4 active:bg-neutral-100 cursor-pointer"
-                onClick={handlePaymentClick} // Changed to new handler
+                onClick={handlePaymentClick}
               >
                 <span className="text-neutral-800">Payment</span>
                 <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -375,6 +385,20 @@ export default function Employee({ user, setUser }) {
             employeeId={user?.profile?.id || user?.id} // Pass employeeId to EmployeePayment
             employeeName={user?.name} // Pass employeeName to EmployeePayment
             onBack={handleBackFromPayment}
+          />
+        )}
+      </div>
+
+      {/* EmployeeAttendance Component - Slides in when showAttendance is true */}
+      <div className={`fixed inset-0 bg-neutral-50 z-20 flex flex-col font-sans
+                   transition-transform duration-300 ease-out
+                   ${showAttendance ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        {showAttendance && (
+          <EmployeeAttendance
+            employeeId={user?.profile?.id || user?.id} // Pass employeeId to EmployeeAttendance
+            employeeName={user?.name} // Pass employeeName to EmployeeAttendance
+            onBack={handleBackFromAttendance}
           />
         )}
       </div>

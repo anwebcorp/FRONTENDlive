@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axiosInstance from "./axiosInstance"; // Use the provided axiosInstance
 
 // Helper function to format date for display
@@ -28,6 +28,9 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
   const [viewMode, setViewMode] = useState('dailyMarking'); // 'dailyMarking', 'employeeSummary', 'allSummary'
   const [employeeOverallSummary, setEmployeeOverallSummary] = useState([]); // Specific employee's monthly summaries
   const [allEmployeesOverallSummary, setAllEmployeesOverallSummary] = useState([]); // All employees' monthly summaries
+  // ⭐ UPDATED: States for nested accordion
+  const [expandedYear, setExpandedYear] = useState(null);
+  const [expandedMonthInYear, setExpandedMonthInYear] = useState(null);
 
   // Effect to fetch initial daily attendance data and all employees
   useEffect(() => {
@@ -113,6 +116,9 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
     try {
       const response = await axiosInstance.get("admin/all/");
       setAllEmployeesOverallSummary(response.data);
+      // ⭐ Reset expanded states when new data is fetched
+      setExpandedYear(null);
+      setExpandedMonthInYear(null);
     } catch (err) {
       console.error("Error fetching all employees summary:", err);
       setError("Failed to load overall attendance for all employees. Ensure 'admin/all/' endpoint is accessible and returns summary data.");
@@ -121,6 +127,40 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
       setLoading(false);
     }
   }, []);
+
+  // ⭐ NEW: Grouped attendance data for nested accordion structure (Year -> Month -> Sheets)
+  const groupedAttendanceByYearAndMonth = useMemo(() => {
+    const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    const grouped = allEmployeesOverallSummary.reduce((acc, sheet) => {
+      const yearKey = sheet.year.toString();
+      const monthKey = capitalize(sheet.month);
+
+      if (!acc[yearKey]) {
+        acc[yearKey] = {};
+      }
+      if (!acc[yearKey][monthKey]) {
+        acc[yearKey][monthKey] = [];
+      }
+      acc[yearKey][monthKey].push(sheet);
+      return acc;
+    }, {});
+
+    // Sort years descending, then months descending within each year
+    const sortedYears = Object.keys(grouped).sort((a, b) => parseInt(b) - parseInt(a));
+    const sortedGrouped = {};
+    sortedYears.forEach(year => {
+      const monthsInYear = Object.keys(grouped[year]).sort((a, b) => monthOrder.indexOf(b) - monthOrder.indexOf(a));
+      sortedGrouped[year] = {};
+      monthsInYear.forEach(month => {
+        // Sort sheets within each month by employee name
+        sortedGrouped[year][month] = grouped[year][month].sort((a, b) => a.profile_name.localeCompare(b.profile_name));
+      });
+    });
+
+    return sortedGrouped;
+  }, [allEmployeesOverallSummary]);
+
 
   // Handle marking daily attendance
   const handleMarkAttendance = useCallback(async (employeeId, status) => {
@@ -247,6 +287,23 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
     setShowHistoryModal(false);
   };
 
+  // ⭐ NEW: Toggle Year accordion
+  const toggleYearAccordion = (year) => {
+    if (expandedYear === year) {
+      setExpandedYear(null); // Collapse the current year
+      setExpandedMonthInYear(null); // Also collapse any month within it
+    } else {
+      setExpandedYear(year); // Expand the new year
+      setExpandedMonthInYear(null); // Collapse any previously expanded month
+    }
+  };
+
+  // ⭐ NEW: Toggle Month accordion within a year
+  const toggleMonthAccordion = (month) => {
+    setExpandedMonthInYear(prevMonth => (prevMonth === month ? null : month));
+  };
+
+
   // Trigger fetching summaries when viewMode changes
   useEffect(() => {
     if (viewMode === 'employeeSummary' && propEmployeeId) {
@@ -260,6 +317,8 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
   const handleBackToAdmin = () => {
     if (viewMode !== 'dailyMarking') {
       setViewMode('dailyMarking'); // Go back to daily marking view first
+      setExpandedYear(null); // Collapse all accordions
+      setExpandedMonthInYear(null);
     } else {
       onBack(); // If already in daily marking, go back to Admin.jsx
     }
@@ -482,55 +541,105 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
         </div>
       )}
 
-      {/* All Employees Overall Summary View */}
+      {/* All Employees Overall Summary View (Nested Accordion Style: Year -> Month) */}
       {viewMode === 'allSummary' && (
         <div className="mt-8">
           <h3 className="text-2xl font-bold text-gray-800 mb-4">Overall Attendance for All Employees</h3>
-          {allEmployeesOverallSummary.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white rounded-lg shadow-md">
-                <thead className="bg-gray-100 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Employee</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Month & Year</th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Present</th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Absent</th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Leave</th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Days Marked</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {allEmployeesOverallSummary
-                    .sort((a, b) => {
-                      // Sort by year, then month (e.g., July 2025 comes after June 2025)
-                      if (a.year !== b.year) return b.year - a.year; // Latest year first
-                      const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                      return monthOrder.indexOf(b.month) - monthOrder.indexOf(a.month); // Latest month first
-                    })
-                    .map(sheet => (
-                      <tr key={sheet.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {sheet.profile_name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                          {capitalize(sheet.month)} {sheet.year}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-green-700">
-                          {sheet.summary.present}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-red-700">
-                          {sheet.summary.absent}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-yellow-700">
-                          {sheet.summary.leave}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700">
-                          {sheet.summary.present + sheet.summary.absent + sheet.summary.leave}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+
+          {Object.keys(groupedAttendanceByYearAndMonth).length > 0 ? (
+            <div className="space-y-4">
+              {Object.entries(groupedAttendanceByYearAndMonth).map(([year, monthsData]) => (
+                <div key={year} className="border border-gray-200 rounded-lg shadow-sm">
+                  {/* Year Accordion Header */}
+                  <button
+                    className="flex justify-between items-center w-full px-6 py-4 bg-blue-50 hover:bg-blue-100 rounded-lg focus:outline-none transition duration-200"
+                    onClick={() => toggleYearAccordion(year)}
+                  >
+                    <span className="text-lg font-bold text-blue-800">
+                      {year}
+                    </span>
+                    <svg
+                      className={`w-6 h-6 text-blue-600 transition-transform duration-200 ${
+                        expandedYear === year ? 'rotate-180' : ''
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </button>
+
+                  {/* Year Accordion Content (Months) */}
+                  {expandedYear === year && (
+                    <div className="p-4 bg-white border-t border-gray-200 space-y-3">
+                      {Object.entries(monthsData).map(([month, sheets]) => (
+                        <div key={month} className="border border-gray-100 rounded-md shadow-sm">
+                          {/* Month Accordion Header */}
+                          <button
+                            className="flex justify-between items-center w-full px-5 py-3 bg-gray-50 hover:bg-gray-100 rounded-md focus:outline-none transition duration-200"
+                            onClick={() => toggleMonthAccordion(month)}
+                          >
+                            <span className="text-md font-semibold text-gray-700">
+                              {month}
+                            </span>
+                            <svg
+                              className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
+                                expandedMonthInYear === month ? 'rotate-180' : ''
+                              }`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                          </button>
+
+                          {/* Month Accordion Content (Employee Table) */}
+                          {expandedMonthInYear === month && (
+                            <div className="p-3 bg-white border-t border-gray-100 overflow-x-auto">
+                              <table className="min-w-full bg-white">
+                                <thead className="bg-gray-50 border-b border-gray-200">
+                                  <tr>
+                                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Employee</th>
+                                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Present</th>
+                                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Absent</th>
+                                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Leave</th>
+                                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Days Marked</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                  {sheets.map(sheet => (
+                                    <tr key={sheet.id} className="hover:bg-gray-50">
+                                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        {sheet.profile_name}
+                                      </td>
+                                      <td className="px-4 py-3 whitespace-nowrap text-center text-sm text-green-700">
+                                        {sheet.summary.present}
+                                      </td>
+                                      <td className="px-4 py-3 whitespace-nowrap text-center text-sm text-red-700">
+                                        {sheet.summary.absent}
+                                      </td>
+                                      <td className="px-4 py-3 whitespace-nowrap text-center text-sm text-yellow-700">
+                                        {sheet.summary.leave}
+                                      </td>
+                                      <td className="px-4 py-3 whitespace-nowrap text-center text-sm text-gray-700">
+                                        {sheet.summary.present + sheet.summary.absent + sheet.summary.leave}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           ) : (
             <p className="text-gray-600">No overall attendance data found for all employees.</p>
@@ -581,7 +690,7 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
             </table>
             <button
               onClick={closeHistoryModal}
-              className="mt-4 bg-red-700 hover:bg-red-800 text-white px-5 py-2 rounded-lg shadow-md transition font-bold hover:shadow-lg" // Bolder, stronger hover shadow
+              className="mt-4 bg-red-700 hover:bg-red-800 text-white px-5 py-2 rounded-lg shadow-md transition font-bold hover:shadow-lg"
             >
               Close
             </button>
