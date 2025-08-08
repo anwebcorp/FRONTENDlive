@@ -1,7 +1,9 @@
 // your_react_project/src/pages/Attendance.jsx
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import axiosInstance from "./axiosInstance"; // Use the provided axiosInstance
+import axiosInstance from "./axiosInstance";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 
 // Helper function to format date for display
 const formatDateForDisplay = (dateString) => {
@@ -17,90 +19,96 @@ const capitalize = (s) => {
 
 const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName, onBack }) => {
   const [employees, setEmployees] = useState([]);
-  const [attendanceRecords, setAttendanceRecords] = useState({}); // Stores daily attendance as {employeeId: {date: status, ...}}
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]); // Current date for marking
-  const [attendanceStatusToday, setAttendanceStatusToday] = useState({}); // To disable buttons after marking for the selected date
-  const [selectedEmployeeForModal, setSelectedEmployeeForModal] = useState(null); // For history modal
+  const [attendanceRecords, setAttendanceRecords] = useState({});
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [attendanceStatusToday, setAttendanceStatusToday] = useState({});
+  const [selectedEmployeeForModal, setSelectedEmployeeForModal] = useState(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [backendSheets, setBackendSheets] = useState([]); // To store raw backend data for sheet management
-  const [error, setError] = useState(null); // State for error handling
-  const [loading, setLoading] = useState(true); // Loading state
+  const [backendSheets, setBackendSheets] = useState([]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0); // State to force a data refresh
 
-  // New states for managing different views and summary data
-  const [viewMode, setViewMode] = useState('dailyMarking'); // 'dailyMarking', 'employeeSummary', 'allSummary'
-  const [employeeOverallSummary, setEmployeeOverallSummary] = useState([]); // Specific employee's monthly summaries
-  const [allEmployeesOverallSummary, setAllEmployeesOverallSummary] = useState([]); // All employees' monthly summaries
-  // ⭐ UPDATED: States for nested accordion
+  const [viewMode, setViewMode] = useState('dailyMarking');
+  const [employeeOverallSummary, setEmployeeOverallSummary] = useState([]);
+  const [allEmployeesOverallSummary, setAllEmployeesOverallSummary] = useState([]);
   const [expandedYear, setExpandedYear] = useState(null);
   const [expandedMonthInYear, setExpandedMonthInYear] = useState(null);
+  const [calendarEmployee, setCalendarEmployee] = useState(null);
+  const [visibleEmployeesCount, setVisibleEmployeesCount] = useState(5);
 
-  // Effect to fetch initial daily attendance data and all employees
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      setLoading(true);
-      setError(null);
-      let uniqueEmployees = {};
-      let newAttendanceRecords = {};
-      let fetchedBackendSheets = [];
+  const fetchInitialData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const employeesResponse = await axiosInstance.get("employees/");
+      const fetchedEmployees = employeesResponse.data
+        .map(emp => ({
+            id: emp.id,
+            name: emp.name,
+            job_title: emp.Job_title,
+            photo: emp.image ? `http://127.0.0.1:8000${emp.image}` : `https://placehold.co/150x150/CCCCCC/FFFFFF?text=${emp.name.charAt(0)}`
+        }));
+      setEmployees(fetchedEmployees);
 
-      try {
-        // Fetch all attendance sheets as the primary source for attendance records and employee list
-        const attendanceResponse = await axiosInstance.get("admin/all/");
-        console.log("[Attendance] Full response from admin/all/:", attendanceResponse.data);
-        fetchedBackendSheets = attendanceResponse.data;
-        setBackendSheets(fetchedBackendSheets); // Store raw backend data
+      const attendanceResponse = await axiosInstance.get("admin/all/");
+      const fetchedBackendSheets = attendanceResponse.data;
+      setBackendSheets(fetchedBackendSheets);
+      
+      const newAttendanceRecords = {};
+      if (Array.isArray(attendanceResponse.data)) {
+        attendanceResponse.data.forEach(sheet => {
+          const employeeId = sheet.profile;
+          // The backend response for 'admin/all' seems to return an `entries` array, not `daily_records`.
+          // We need to parse it to a `daily_records` object for the existing logic to work.
+          const dailyRecords = sheet.entries ? sheet.entries.reduce((acc, entry) => {
+            acc[entry.date] = entry.status;
+            return acc;
+          }, {}) : {};
 
-        // Process attendance data to populate records and employees
-        fetchedBackendSheets.forEach((sheet) => {
-          // FIX: Changed sheet.profile.id to sheet.profile because backend sends profile as ID directly
-          if (!uniqueEmployees[sheet.profile]) { // Check if employee is already added by their profile ID
-            uniqueEmployees[sheet.profile] = { // Use sheet.profile as the ID
-              id: sheet.profile, // Assign sheet.profile directly as the ID
-              name: sheet.profile_name, // Use profile_name from sheet as primary source for employee name
-            };
-          }
-          if (!newAttendanceRecords[sheet.profile]) {
-            newAttendanceRecords[sheet.profile] = {};
-          }
-          sheet.entries.forEach((entry) => {
-            newAttendanceRecords[sheet.profile][entry.date] = entry.status; // Use sheet.profile for record key
-          });
+          newAttendanceRecords[employeeId] = { ...newAttendanceRecords[employeeId], ...dailyRecords };
         });
-
-      } catch (attendanceErr) {
-        console.error("Error fetching attendance sheets from 'admin/all/':", attendanceErr);
-        setError("Failed to load attendance data. Please ensure backend is running and 'admin/all/' is accessible.");
-        setEmployees([]); // Clear employees if primary attendance data fails
-        setAttendanceRecords({});
-        setLoading(false);
-        return; // Stop further execution if critical data fetch fails
       }
-
-      setEmployees(Object.values(uniqueEmployees));
       setAttendanceRecords(newAttendanceRecords);
 
-      // Set initial attendance status for the selected date for daily marking
       const initialStatus = {};
-      Object.values(uniqueEmployees).forEach(emp => {
-        const record = newAttendanceRecords[emp.id]?.[selectedDate];
-        initialStatus[emp.id] = record || null; // 'Present', 'Absent', 'Leave', or null if not marked
+      fetchedEmployees.forEach(emp => {
+        initialStatus[emp.id] = newAttendanceRecords[emp.id]?.[selectedDate] || null;
       });
       setAttendanceStatusToday(initialStatus);
+
+    } catch (err) {
+      console.error("Failed to fetch attendance data:", err);
+      setError("Failed to load attendance data.");
+      setEmployees([]);
+      setAttendanceRecords({});
+    } finally {
       setLoading(false);
-    };
+    }
+  }, [selectedDate]);
 
+  useEffect(() => {
     fetchInitialData();
-  }, [selectedDate]); // Re-run if selectedDate changes
+  }, [fetchInitialData, refreshKey]);
 
-  // Function to fetch specific employee's monthly summaries (now filters from all sheets)
+  const handleRefreshData = useCallback(() => {
+    setRefreshKey(prevKey => prevKey + 1);
+  }, []);
+
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    if (scrollTop + clientHeight >= scrollHeight) {
+      setVisibleEmployeesCount(prevCount => Math.min(prevCount + 5, employees.length));
+    }
+  };
+
   const fetchEmployeeOverallSummary = useCallback(async (id) => {
     setLoading(true);
     setError(null);
     try {
-      // Re-fetch all sheets to ensure latest data, then filter on the frontend
       const response = await axiosInstance.get("admin/all/");
       const allSheets = response.data;
-      const filteredSheets = allSheets.filter(sheet => sheet.profile === id); // FIX: sheet.profile instead of sheet.profile.id
+      const filteredSheets = allSheets.filter(sheet => sheet.profile === id);
       setEmployeeOverallSummary(filteredSheets);
     } catch (err) {
       console.error(`Error fetching summary for employee ${id}:`, err);
@@ -111,14 +119,12 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
     }
   }, []);
 
-  // Function to fetch all employees' monthly summaries
   const fetchAllEmployeesOverallSummary = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await axiosInstance.get("admin/all/");
       setAllEmployeesOverallSummary(response.data);
-      // ⭐ Reset expanded states when new data is fetched
       setExpandedYear(null);
       setExpandedMonthInYear(null);
     } catch (err) {
@@ -130,10 +136,8 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
     }
   }, []);
 
-  // ⭐ NEW: Grouped attendance data for nested accordion structure (Year -> Month -> Sheets)
   const groupedAttendanceByYearAndMonth = useMemo(() => {
     const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
     const grouped = allEmployeesOverallSummary.reduce((acc, sheet) => {
       const yearKey = sheet.year.toString();
       const monthKey = capitalize(sheet.month);
@@ -148,14 +152,12 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
       return acc;
     }, {});
 
-    // Sort years descending, then months descending within each year
     const sortedYears = Object.keys(grouped).sort((a, b) => parseInt(b) - parseInt(a));
     const sortedGrouped = {};
     sortedYears.forEach(year => {
       const monthsInYear = Object.keys(grouped[year]).sort((a, b) => monthOrder.indexOf(b) - monthOrder.indexOf(a));
       sortedGrouped[year] = {};
       monthsInYear.forEach(month => {
-        // Sort sheets within each month by employee name
         sortedGrouped[year][month] = grouped[year][month].sort((a, b) => a.profile_name.localeCompare(b.profile_name));
       });
     });
@@ -163,121 +165,62 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
     return sortedGrouped;
   }, [allEmployeesOverallSummary]);
 
-
-  // Handle marking daily attendance
   const handleMarkAttendance = useCallback(async (employeeId, status) => {
-    setError(null);
-    const currentMonth = new Date(selectedDate).toLocaleString("default", { month: "long" });
-    const currentYear = new Date(selectedDate).getFullYear();
-
-    console.log(`[Attendance] Marking attendance for Employee ID: ${employeeId}, Status: ${status}, Date: ${selectedDate}`);
-    console.log(`[Attendance] Current Month: ${currentMonth}, Current Year: ${currentYear}`);
-
-    let sheetToModify = backendSheets.find(
-      (sheet) =>
-        sheet.profile === employeeId && // FIX: Changed sheet.profile.id to sheet.profile
-        capitalize(sheet.month) === capitalize(currentMonth) &&
-        sheet.year === currentYear
-    );
-    console.log("[Attendance] Initial local sheet check (backendSheets.find):", sheetToModify ? `Found sheet ID ${sheetToModify.id}` : "Not found locally.");
-
-    let url;
-    let method;
-    let payload;
-
-    try {
-      const newEntry = {
-        date: selectedDate,
-        status: status,
-        day: new Date(selectedDate).toLocaleString("en-US", { weekday: "long" }),
-      };
-      console.log("[Attendance] New Daily Entry:", newEntry);
-
-
-      if (sheetToModify) {
-        let updatedEntries;
-        const existingEntryIndex = sheetToModify.entries.findIndex((e) => e.date === selectedDate);
-
-        if (existingEntryIndex > -1) {
-          updatedEntries = sheetToModify.entries.map((entry, idx) =>
-            idx === existingEntryIndex ? { ...entry, status: status } : entry
+      setLoading(true);
+      setError(null);
+      try {
+          const dateToMark = selectedDate;
+          const dateObj = new Date(dateToMark);
+          const month = dateObj.toLocaleString('default', { month: 'long' });
+          const year = dateObj.getFullYear();
+          
+          let employeeAttendanceSheet = backendSheets.find(sheet =>
+              sheet.profile === employeeId &&
+              sheet.month.toLowerCase() === month.toLowerCase() &&
+              sheet.year === year
           );
-          console.log(`[Attendance] Updating existing entry for date ${selectedDate} in sheet ID ${sheetToModify.id}.`);
-        } else {
-          updatedEntries = [...sheetToModify.entries, newEntry];
-          console.log(`[Attendance] Adding new entry for date ${selectedDate} to existing sheet ID ${sheetToModify.id}.`);
-        }
 
-        url = `admin/sheet/${sheetToModify.id}/`;
-        method = "put";
-        payload = {
-          profile: employeeId, // Keep 'profile: employeeId' for PUT payload as required by backend
-          month: capitalize(currentMonth),
-          year: currentYear,
-          status: "Saved", // Assuming 'Saved' for updates
-          entries: updatedEntries,
-        };
-        console.log("[Attendance] Decided to perform PUT request.");
-      } else {
-        url = "admin/create/";
-        method = "post";
-        payload = {
-          profile: employeeId, // 'profile' is required for POST (creation)
-          month: capitalize(currentMonth),
-          year: currentYear,
-          status: "Saved", // Always 'Saved' for new sheets, or 'Draft' if you have an initial state
-          entries: [newEntry],
-        };
-        console.log("[Attendance] Decided to perform POST request (no existing sheet found).");
+          if (!employeeAttendanceSheet) {
+              const newSheet = {
+                  profile: employeeId,
+                  month: capitalize(month),
+                  year: year,
+                  entries: [{ date: dateToMark, status: status }]
+              };
+              await axiosInstance.post("admin/create/", newSheet);
+          } else {
+              // The backend expects an array of entries for PATCH, not a daily_records object
+              const currentEntries = employeeAttendanceSheet.entries || [];
+              const entryIndex = currentEntries.findIndex(entry => entry.date === dateToMark);
+              
+              let updatedEntries;
+              if (entryIndex > -1) {
+                  // Update existing entry
+                  updatedEntries = [...currentEntries];
+                  updatedEntries[entryIndex] = { date: dateToMark, status: status };
+              } else {
+                  // Add new entry
+                  updatedEntries = [...currentEntries, { date: dateToMark, status: status }];
+              }
+
+              const sheetId = employeeAttendanceSheet.id;
+              // ⚠️ FIX: The URL for PATCH must include '/sheet/' as per urls.py.
+              await axiosInstance.patch(`admin/sheet/${sheetId}/`, { entries: updatedEntries });
+          }
+
+          setAttendanceStatusToday(prevStatus => ({
+              ...prevStatus,
+              [employeeId]: status
+          }));
+          setRefreshKey(prevKey => prevKey + 1);
+
+      } catch (err) {
+          console.error("Error marking attendance:", err.response || err);
+          setError("Failed to mark attendance. Please try again.");
+      } finally {
+          setLoading(false);
       }
-
-      console.log("[Attendance] Sending payload:", payload);
-      console.log("[Attendance] To URL:", url);
-      console.log("[Attendance] Method:", method);
-
-      const response = await axiosInstance[method](url, payload);
-      console.log("[Attendance] API Response:", response.data);
-
-      setAttendanceRecords((prevRecords) => ({
-        ...prevRecords,
-        [employeeId]: {
-          ...(prevRecords[employeeId] || {}),
-          [selectedDate]: status,
-        },
-      }));
-
-      // Update backendSheets to reflect the change for further operations
-      if (method === "post") {
-        setBackendSheets((prevSheets) => [...prevSheets, response.data]);
-        console.log("[Attendance] Backend sheets updated (POST).");
-      } else {
-        setBackendSheets((prevSheets) =>
-          prevSheets.map((sheet) =>
-            sheet.id === response.data.id ? response.data : sheet
-          )
-        );
-        console.log("[Attendance] Backend sheets updated (PUT).");
-      }
-
-      setAttendanceStatusToday((prevStatus) => ({
-        ...prevStatus,
-        [employeeId]: status, // Mark status directly
-      }));
-      console.log("[Attendance] Attendance status updated for selected date.");
-
-    } catch (err) {
-      console.error("[Attendance] Error marking attendance:", err);
-      if (err.response) {
-        console.error("[Attendance] Server response data:", err.response.data);
-        const errorDetail = err.response.data.detail || JSON.stringify(err.response.data);
-        setError(`Failed to mark attendance: ${errorDetail}. Please ensure data is unique or sheet exists.`);
-      } else if (err.request) {
-        setError("No response from server. Check network connection.");
-      } else {
-        setError("Error setting up attendance request. Please try again.");
-      }
-    }
-  }, [selectedDate, backendSheets]); // Dependency on backendSheets
+  }, [selectedDate, backendSheets]);
 
   const openHistoryModal = (employee) => {
     setSelectedEmployeeForModal(employee);
@@ -289,24 +232,32 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
     setShowHistoryModal(false);
   };
 
-  // ⭐ NEW: Toggle Year accordion
   const toggleYearAccordion = (year) => {
     if (expandedYear === year) {
-      setExpandedYear(null); // Collapse the current year
-      setExpandedMonthInYear(null); // Also collapse any month within it
+      setExpandedYear(null);
+      setExpandedMonthInYear(null);
     } else {
-      setExpandedYear(year); // Expand the new year
-      setExpandedMonthInYear(null); // Collapse any previously expanded month
+      setExpandedYear(year);
+      setExpandedMonthInYear(null);
     }
   };
 
-  // ⭐ NEW: Toggle Month accordion within a year
   const toggleMonthAccordion = (month) => {
     setExpandedMonthInYear(prevMonth => (prevMonth === month ? null : month));
   };
 
+  const openCalendarForEmployee = (employee) => {
+    setCalendarEmployee(employee);
+  };
 
-  // Trigger fetching summaries when viewMode changes
+  const closeCalendarView = () => {
+    setCalendarEmployee(null);
+  };
+  
+  const sortedEmployees = useMemo(() => {
+    return [...employees].sort((a, b) => a.name.localeCompare(b.name));
+  }, [employees]);
+
   useEffect(() => {
     if (viewMode === 'employeeSummary' && propEmployeeId) {
       fetchEmployeeOverallSummary(propEmployeeId);
@@ -315,17 +266,16 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
     }
   }, [viewMode, propEmployeeId, fetchEmployeeOverallSummary, fetchAllEmployeesOverallSummary]);
 
-  // Handle back button for the entire component
   const handleBackToAdmin = () => {
     if (viewMode !== 'dailyMarking') {
-      setViewMode('dailyMarking'); // Go back to daily marking view first
-      setExpandedYear(null); // Collapse all accordions
+      setViewMode('dailyMarking');
+      setExpandedYear(null);
       setExpandedMonthInYear(null);
+      closeCalendarView();
     } else {
-      onBack(); // If already in daily marking, go back to Admin.jsx
+      onBack();
     }
   };
-
 
   if (loading) {
     return (
@@ -351,18 +301,25 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
   }
 
   return (
-    <div className="container mx-auto p-4 bg-white shadow-lg rounded-xl max-h-screen overflow-y-auto"> {/* Added max-h-screen and overflow-y-auto */}
+    <div className="container mx-auto p-4 bg-white shadow-lg rounded-xl max-h-screen overflow-y-auto">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-gray-800">Attendance Dashboard</h2>
-        <button
-          onClick={handleBackToAdmin}
-          className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-md transition duration-200 font-bold hover:shadow-lg" // More padding, bolder, stronger hover shadow
-        >
-          {viewMode !== 'dailyMarking' ? 'Back to Daily Marking' : 'Back to Admin'}
-        </button>
+        <div className="flex space-x-4">
+            <button
+              onClick={handleBackToAdmin}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-md transition duration-200 font-bold hover:shadow-lg"
+            >
+              {viewMode !== 'dailyMarking' ? 'Back to Daily Marking' : 'Back to Admin'}
+            </button>
+            <button
+              onClick={handleRefreshData}
+              className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg shadow-md transition duration-200 font-bold hover:shadow-lg"
+            >
+              Refresh Data
+            </button>
+        </div>
       </div>
 
-      {/* Conditional Rendering based on viewMode */}
       {viewMode === 'dailyMarking' && (
         <>
           <div className="mb-6">
@@ -378,7 +335,7 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
             />
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto h-[500px] overflow-y-auto" onScroll={handleScroll}>
             <table className="min-w-full bg-white rounded-lg shadow-md">
               <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
@@ -397,37 +354,45 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {employees.length > 0 ? (
-                  employees.map((employee) => {
-                    console.log("Rendering employee:", employee);
+                {sortedEmployees.length > 0 ? (
+                  sortedEmployees.slice(0, visibleEmployeesCount).map((employee) => {
+                    const currentStatus = attendanceStatusToday[employee.id];
                     return (
                       <tr key={employee.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {employee.name}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10">
+                                    <img className="h-10 w-10 rounded-full object-cover" src={employee.photo} alt={employee.name} />
+                                </div>
+                                <div className="ml-4">
+                                    <div className="text-sm font-medium text-gray-900">{employee.name}</div>
+                                    <div className="text-sm text-gray-500">{employee.job_title}</div>
+                                </div>
+                            </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <span
                             className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              attendanceStatusToday[employee.id] === "Present"
+                              currentStatus === "Present"
                                 ? "bg-green-100 text-green-800"
-                                : attendanceStatusToday[employee.id] === "Absent"
+                                : currentStatus === "Absent"
                                 ? "bg-red-100 text-red-800"
-                                : attendanceStatusToday[employee.id] === "Leave"
+                                : currentStatus === "Leave"
                                 ? "bg-yellow-100 text-yellow-800"
                                 : "bg-gray-100 text-gray-800"
                             }`}
                           >
-                            {attendanceRecords[employee.id]?.[selectedDate] || "N/A"}
+                            {capitalize(currentStatus || "N/A")}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                           <div className="flex justify-center space-x-2">
                             <button
                               onClick={() => handleMarkAttendance(employee.id, "Present")}
-                              disabled={attendanceStatusToday[employee.id] === "Present"}
-                              className={`px-6 py-3 rounded-lg text-white shadow-lg transition duration-200 font-bold hover:shadow-xl hover:scale-105 ${ // Increased padding, shadow, bold, hover effects
-                                attendanceStatusToday[employee.id] === "Present"
-                                  ? "bg-green-500 cursor-not-allowed" // Slightly lighter for disabled
+                              disabled={currentStatus === "Present"}
+                              className={`px-6 py-3 rounded-lg text-white shadow-lg transition duration-200 font-bold hover:shadow-xl hover:scale-105 ${
+                                currentStatus === "Present"
+                                  ? "bg-green-500 cursor-not-allowed"
                                   : "bg-green-700 hover:bg-green-800"
                               }`}
                             >
@@ -435,9 +400,9 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
                             </button>
                             <button
                               onClick={() => handleMarkAttendance(employee.id, "Absent")}
-                              disabled={attendanceStatusToday[employee.id] === "Absent"}
-                              className={`px-6 py-3 rounded-lg text-white shadow-lg transition duration-200 font-bold hover:shadow-xl hover:scale-105 ${ // Increased padding, shadow, bold, hover effects
-                                attendanceStatusToday[employee.id] === "Absent"
+                              disabled={currentStatus === "Absent"}
+                              className={`px-6 py-3 rounded-lg text-white shadow-lg transition duration-200 font-bold hover:shadow-xl hover:scale-105 ${
+                                currentStatus === "Absent"
                                   ? "bg-red-500 cursor-not-allowed"
                                   : "bg-red-700 hover:bg-red-800"
                               }`}
@@ -446,9 +411,9 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
                             </button>
                             <button
                               onClick={() => handleMarkAttendance(employee.id, "Leave")}
-                              disabled={attendanceStatusToday[employee.id] === "Leave"}
-                              className={`px-6 py-3 rounded-lg text-white shadow-lg transition duration-200 font-bold hover:shadow-xl hover:scale-105 ${ // Increased padding, shadow, bold, hover effects
-                                attendanceStatusToday[employee.id] === "Leave"
+                              disabled={currentStatus === "Leave"}
+                              className={`px-6 py-3 rounded-lg text-white shadow-lg transition duration-200 font-bold hover:shadow-xl hover:scale-105 ${
+                                currentStatus === "Leave"
                                   ? "bg-yellow-500 cursor-not-allowed"
                                   : "bg-yellow-700 hover:bg-yellow-800"
                               }`}
@@ -460,7 +425,7 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                           <button
                             onClick={() => openHistoryModal(employee)}
-                            className="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:bg-blue-200 hover:shadow-md transition duration-200 font-semibold" // Styled as a distinct secondary button
+                            className="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:bg-blue-200 hover:shadow-md transition duration-200 font-semibold"
                           >
                             View History
                           </button>
@@ -472,6 +437,12 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
                   <tr>
                     <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
                       No employees found or loaded.
+                      <button
+                         onClick={handleRefreshData}
+                         className="ml-2 text-sm text-blue-600 hover:underline"
+                      >
+                         Click to refresh
+                      </button>
                     </td>
                   </tr>
                 )}
@@ -483,14 +454,14 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
             {propEmployeeId && propEmployeeName && (
                 <button
                 onClick={() => setViewMode('employeeSummary')}
-                className="px-7 py-3 rounded-lg text-white shadow-xl hover:shadow-2xl transition duration-200 font-bold hover:scale-105 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900" // Enhanced styling
+                className="px-7 py-3 rounded-lg text-white shadow-xl hover:shadow-2xl transition duration-200 font-bold hover:scale-105 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900"
                 >
                 View {propEmployeeName}'s Overall Attendance
                 </button>
             )}
             <button
               onClick={() => setViewMode('allSummary')}
-              className="px-7 py-3 rounded-lg text-white shadow-xl hover:shadow-2xl transition duration-200 font-bold hover:scale-105 bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900" // Enhanced styling
+              className="px-7 py-3 rounded-lg text-white shadow-xl hover:shadow-2xl transition duration-200 font-bold hover:scale-105 bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900"
             >
               View All Employees Overall Attendance
             </button>
@@ -498,10 +469,9 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
         </>
       )}
 
-      {/* Individual Employee Overall Summary View */}
       {viewMode === 'employeeSummary' && propEmployeeId && propEmployeeName && (
         <div className="mt-8">
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">Overall Attendance for {propEmployeeName}</h3>
+          <h3 className="2xl font-bold text-gray-800 mb-4">Overall Attendance for {propEmployeeName}</h3>
           {employeeOverallSummary.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full bg-white rounded-lg shadow-md">
@@ -543,16 +513,34 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
         </div>
       )}
 
-      {/* All Employees Overall Summary View (Nested Accordion Style: Year -> Month) */}
       {viewMode === 'allSummary' && (
         <div className="mt-8">
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">Overall Attendance for All Employees</h3>
-
+          <h3 className="2xl font-bold text-gray-800 mb-4">Overall Attendance for All Employees</h3>
+          {calendarEmployee && (
+            <div className="mb-4 p-4 rounded-lg bg-gray-100 flex flex-wrap items-center justify-center space-x-4">
+              <span className="font-semibold text-gray-700">Calendar Legend:</span>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                <span>Present</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                <span>Absent</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
+                <span>Leave</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-gray-300 rounded-full"></div>
+                <span>Not Marked</span>
+              </div>
+            </div>
+          )}
           {Object.keys(groupedAttendanceByYearAndMonth).length > 0 ? (
             <div className="space-y-4">
               {Object.entries(groupedAttendanceByYearAndMonth).map(([year, monthsData]) => (
                 <div key={year} className="border border-gray-200 rounded-lg shadow-sm">
-                  {/* Year Accordion Header */}
                   <button
                     className="flex justify-between items-center w-full px-6 py-4 bg-blue-50 hover:bg-blue-100 rounded-lg focus:outline-none transition duration-200"
                     onClick={() => toggleYearAccordion(year)}
@@ -573,12 +561,10 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
                     </svg>
                   </button>
 
-                  {/* Year Accordion Content (Months) */}
                   {expandedYear === year && (
                     <div className="p-4 bg-white border-t border-gray-200 space-y-3">
                       {Object.entries(monthsData).map(([month, sheets]) => (
                         <div key={month} className="border border-gray-100 rounded-md shadow-sm">
-                          {/* Month Accordion Header */}
                           <button
                             className="flex justify-between items-center w-full px-5 py-3 bg-gray-50 hover:bg-gray-100 rounded-md focus:outline-none transition duration-200"
                             onClick={() => toggleMonthAccordion(month)}
@@ -599,41 +585,126 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
                             </svg>
                           </button>
 
-                          {/* Month Accordion Content (Employee Table) */}
                           {expandedMonthInYear === month && (
                             <div className="p-3 bg-white border-t border-gray-100 overflow-x-auto">
-                              <table className="min-w-full bg-white">
-                                <thead className="bg-gray-50 border-b border-gray-200">
-                                  <tr>
-                                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Employee</th>
-                                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Present</th>
-                                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Absent</th>
-                                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Leave</th>
-                                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Days Marked</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                  {sheets.map(sheet => (
-                                    <tr key={sheet.id} className="hover:bg-gray-50">
-                                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {sheet.profile_name}
-                                      </td>
-                                      <td className="px-4 py-3 whitespace-nowrap text-center text-sm text-green-700">
-                                        {sheet.summary.present}
-                                      </td>
-                                      <td className="px-4 py-3 whitespace-nowrap text-center text-sm text-red-700">
-                                        {sheet.summary.absent}
-                                      </td>
-                                      <td className="px-4 py-3 whitespace-nowrap text-center text-sm text-yellow-700">
-                                        {sheet.summary.leave}
-                                      </td>
-                                      <td className="px-4 py-3 whitespace-nowrap text-center text-sm text-gray-700">
-                                        {sheet.summary.present + sheet.summary.absent + sheet.summary.leave}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                {calendarEmployee ? (
+                                    <div className="w-full">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h4 className="text-lg font-bold">
+                                                Attendance Calendar for {calendarEmployee.name}
+                                            </h4>
+                                            <button
+                                                onClick={closeCalendarView}
+                                                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-lg text-sm transition duration-200"
+                                            >
+                                                Back
+                                            </button>
+                                        </div>
+                                        <Calendar
+                                            className="mx-auto react-calendar-override"
+                                            tileContent={({ date, view }) => {
+                                                if (view === 'month') {
+                                                    const formattedDate = date.toISOString().split('T')[0];
+                                                    const status = attendanceRecords[calendarEmployee.id]?.[formattedDate];
+                                                    let colorClass = '';
+                                                    switch (status) {
+                                                        case 'Present':
+                                                            colorClass = 'bg-green-500 text-white';
+                                                            break;
+                                                        case 'Absent':
+                                                            colorClass = 'bg-red-500 text-white';
+                                                            break;
+                                                        case 'Leave':
+                                                            colorClass = 'bg-yellow-500 text-black';
+                                                            break;
+                                                        default:
+                                                            colorClass = '';
+                                                            break;
+                                                    }
+                                                    return (
+                                                        <div
+                                                            className={`w-full h-full flex justify-center items-center text-sm rounded-full ${colorClass}`}
+                                                        >
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            }}
+                                            value={null}
+                                            tileClassName={({ date, view }) => {
+                                                if (view === 'month') {
+                                                    const formattedDate = date.toISOString().split('T')[0];
+                                                    const status = attendanceRecords[calendarEmployee.id]?.[formattedDate];
+                                                    if (status) {
+                                                        return `has-attendance-status`;
+                                                    }
+                                                }
+                                                return null;
+                                            }}
+                                        />
+                                        <style jsx="true">{`
+                                            .react-calendar-override {
+                                                width: 100%;
+                                                max-width: 100%;
+                                                border: 1px solid #e2e8f0;
+                                                border-radius: 0.5rem;
+                                                font-family: inherit;
+                                                line-height: 1.125em;
+                                                background-color: white;
+                                            }
+                                            .react-calendar-override .react-calendar__tile {
+                                                height: 48px;
+                                                display: flex;
+                                                justify-content: center;
+                                                align-items: center;
+                                                position: relative;
+                                                border-radius: 9999px;
+                                            }
+                                            .react-calendar-override .react-calendar__tile.react-calendar__tile--now {
+                                                background: #f0f4f8;
+                                            }
+                                            .react-calendar-override .react-calendar__tile > div {
+                                                width: 90%;
+                                                height: 90%;
+                                                display: flex;
+                                                justify-content: center;
+                                                align-items: center;
+                                                border-radius: 9999px;
+                                                position: absolute;
+                                                top: 50%;
+                                                left: 50%;
+                                                transform: translate(-50%, -50%);
+                                                z-index: 1;
+                                            }
+                                            .react-calendar-override .react-calendar__tile > div > abbr {
+                                                z-index: 2;
+                                                position: relative;
+                                            }
+                                            .react-calendar-override .react-calendar__tile--active,
+                                            .react-calendar-override .react-calendar__tile--hasActive,
+                                            .react-calendar-override .react-calendar__tile:enabled:hover,
+                                            .react-calendar-override .react-calendar__tile:enabled:focus {
+                                                background-color: #f3f4f6;
+                                                color: inherit;
+                                            }
+                                        `}</style>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {sheets.map(sheet => {
+                                            const employeeName = employees.find(e => e.id === sheet.profile)?.name || 'Unknown Employee';
+                                            return (
+                                                <button
+                                                    key={sheet.id}
+                                                    onClick={() => openCalendarForEmployee({ id: sheet.profile, name: employeeName })}
+                                                    className="w-full text-left px-4 py-2 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors duration-200 focus:outline-none"
+                                                >
+                                                    <span className="font-medium text-gray-800">{employeeName}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                           )}
                         </div>
@@ -649,14 +720,13 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
         </div>
       )}
 
-      {/* History Modal (reused) */}
       {showHistoryModal && selectedEmployeeForModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-lg w-full">
             <h3 className="text-2xl font-bold text-gray-800 mb-4">
               Attendance History for {selectedEmployeeForModal.name}
             </h3>
-            <div className="overflow-y-auto max-h-[70vh] border border-gray-200 rounded-lg"> {/* Added scrollability */}
+            <div className="overflow-y-auto max-h-[70vh] border border-gray-200 rounded-lg">
               <table className="min-w-full bg-white">
                 <thead className="bg-gray-50 border-b">
                   <tr>

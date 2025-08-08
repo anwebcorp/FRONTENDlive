@@ -18,77 +18,85 @@ export default function Login({ setUser }) {
 
       console.log("Full API response:", response.data);
 
-      const { token } = response.data;
+      const { tokens, msg } = response.data;
       let userProfile = null;
-      const allProfiles = response.data.profiles; // This will contain all profiles
 
-      // Determine if the user is an admin based on the backend message
-      const isUserAdminFromBackend = response.data.msg === 'Admin Login Successful';
+      const isUserAdminFromBackend = msg === 'Admin Login Successful';
+      // ⭐ FIX: Directly check for 'Supplier Login Successful' message
+      const isUserSupplierFromBackend = msg === 'Supplier Login Successful'; 
 
-      if (response.data.profile) {
-        // If a singular 'profile' object is directly returned, use that.
-        // Add the isAdmin flag to the profile
+      if (isUserAdminFromBackend) {
+        const userIdFromToken = tokens?.access ? JSON.parse(atob(tokens.access.split('.')[1])).user_id : null;
+
+        if (userIdFromToken) {
+          userProfile = {
+            id: userIdFromToken,
+            username: username,
+            isAdmin: true,
+            isSupplier: false, // Explicitly set for admin
+            isEmployee: false, // Explicitly set for admin
+            adminData: response.data.data
+          };
+        } else {
+          setError("Admin login successful, but user ID could not be retrieved from token.");
+          console.error("Admin login success, but no user ID in token:", response.data);
+          return;
+        }
+      } else if (response.data.profile) {
+        // This path is for Employee or Supplier
         userProfile = { ...response.data.profile, isAdmin: isUserAdminFromBackend };
-        console.log("Found singular 'profile' in response.");
-      } else if (allProfiles && allProfiles.length > 0) {
-        // If no singular 'profile' but 'profiles' array exists,
-        // assume the first profile in the array is the logged-in user's.
-        // Add the isAdmin flag to the profile
-        userProfile = { ...allProfiles[0], isAdmin: isUserAdminFromBackend };
-        console.log(`Assumed logged-in user profile is the first in 'profiles' array. ID: ${userProfile?.id}`);
 
-        // This console.warn is now less critical as we're relying on the `isAdmin` flag
-        // if (userProfile && userProfile.id !== 18 && isUserAdminFromBackend) {
-        //   console.warn(`Logged-in admin's profile ID (${userProfile.id}) does not match hardcoded ADMIN_ID (18). Relying on 'isAdmin' flag.`);
-        // }
+        // ⭐ FIX: Set isSupplier based on the message, not just company_name
+        if (isUserSupplierFromBackend) {
+            userProfile.isSupplier = true;
+            userProfile.isEmployee = false;
+        } else {
+            // Default to employee if not admin and not explicitly supplier by message
+            userProfile.isSupplier = false;
+            userProfile.isEmployee = true;
+        }
+
+        // Ensure the profile has an 'id' which `PrivateRoute` checks
+        if (!userProfile.id && userProfile.profile?.id) {
+            userProfile.id = userProfile.profile.id;
+        }
+      } else {
+        setError("Login successful, but no valid profile data found in response.");
+        console.error("Login successful, but unhandled response structure:", response.data);
+        return;
       }
 
-      // Check if essential data (tokens and a valid userProfile) is present
-      if (token && token.access && token.refresh && userProfile && typeof userProfile.id === "number") {
-        localStorage.setItem("accessToken", token.access);
-        localStorage.setItem("refreshToken", token.refresh);
-        localStorage.setItem("user", JSON.stringify(userProfile)); // Store user with isAdmin flag
-        localStorage.setItem("allProfiles", JSON.stringify(allProfiles)); // Store all profiles for admin view
-
-        console.log("Tokens, user, and all profiles stored in localStorage.");
-        console.log("User ID from API (identified):", userProfile.id);
-        console.log("Is User Admin (identified):", userProfile.isAdmin);
-
-
+      if (userProfile && userProfile.id && tokens?.access && tokens?.refresh) {
         setUser(userProfile);
+        localStorage.setItem('access_token', tokens.access);
+        localStorage.setItem('refreshToken', tokens.refresh);
+        // Store the full userProfile (including isAdmin, isSupplier, isEmployee flags)
+        localStorage.setItem('user', JSON.stringify(userProfile));
 
-        // Determine navigation based on the isAdmin flag
+
         if (isUserAdminFromBackend) {
-          console.log("Login Successful as Admin (based on backend message). Navigating to /admin");
-          navigate("/admin", { replace: true });
+            localStorage.setItem('adminData', JSON.stringify(response.data.data));
+            console.log("Login Successful as Admin. Navigating to /admin");
+            navigate("/admin", { replace: true });
+        } else if (userProfile.isSupplier) { // This condition will now correctly evaluate to true for suppliers
+            console.log("Login Successful as Supplier. Navigating to /supplier-info");
+            navigate("/supplier-info", { replace: true });
         } else {
-          console.log("Login Successful as Employee. Navigating to /employee");
-          navigate("/employee", { replace: true });
+            console.log("Login Successful as Employee. Navigating to /employee");
+            navigate("/employee", { replace: true });
         }
+
       } else {
-        console.warn("Login successful, but required data (tokens or user profile with valid ID) missing or malformed:", { responseData: response.data, finalUserProfile: userProfile });
-        setError("Login failed: Incomplete or malformed user data received from server. Please try again.");
+        setError("Login failed: Incomplete or malformed data received from the server. Please try again.");
+        console.error("Login successful, but final validation failed:", { responseData: response.data, finalUserProfile: userProfile });
       }
+
     } catch (err) {
-      console.error("Login API request error:", err);
-
-      if (err.response) {
-        console.error("Error response data:", err.response.data);
-        console.error("Error response status:", err.response.status);
-
-        if (err.response.data && err.response.data.msg) {
-          setError(err.response.data.msg);
-        } else if (err.response.status === 401 || err.response.status === 403) {
-          setError("Invalid username or password. Please check your credentials.");
-        } else {
-          setError("An unexpected server error occurred. Please try again later.");
-        }
-      } else if (err.request) {
-        console.error("No response received:", err.request);
-        setError("Network error: Could not connect to the server. Please check your internet connection.");
+      console.error("Login failed:", err);
+      if (err.response && err.response.data && err.response.data.msg) {
+        setError(err.response.data.msg);
       } else {
-        console.error("Error setting up request:", err.message);
-        setError("An unexpected error occurred. Please try again.");
+        setError("Login failed. Please check your credentials.");
       }
     }
   };
@@ -96,7 +104,6 @@ export default function Login({ setUser }) {
   return (
     <div className="flex items-center justify-center min-h-screen bg-neutral-50 font-sans p-4">
       <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm">
-        {/* Company Logo */}
         <div className="flex justify-center mb-6">
           <img
             src={companyLogo}
@@ -105,13 +112,11 @@ export default function Login({ setUser }) {
           />
         </div>
 
-        {/* Title/Header area */}
         <div className="text-center mb-6">
           <p className="text-neutral-600 text-sm">Enter your credentials to continue</p>
         </div>
 
         <form className="space-y-5" onSubmit={handleLogin}>
-          {/* Username/Email Input */}
           <div>
             <label className="block text-neutral-700 text-sm font-medium mb-1" htmlFor="username">Username</label>
             <input
@@ -125,7 +130,6 @@ export default function Login({ setUser }) {
             />
           </div>
 
-          {/* Password Input */}
           <div>
             <label className="block text-neutral-700 text-sm font-medium mb-1" htmlFor="password">Password</label>
             <input
@@ -139,14 +143,12 @@ export default function Login({ setUser }) {
             />
           </div>
 
-          {/* Error Message */}
           {error && (
             <div className="text-red-600 text-sm text-center py-2 bg-red-100 rounded-lg px-4">
               {error}
             </div>
           )}
 
-          {/* Sign In Button */}
           <button
             type="submit"
             className="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 ease-in-out text-lg"
@@ -154,9 +156,7 @@ export default function Login({ setUser }) {
             Log In
           </button>
 
-          {/* Forgot Password (Optional, but common in iOS login) */}
           <div className="text-center pt-2">
-            {/* You can add a "Forgot Password?" link here if needed */}
           </div>
         </form>
       </div>

@@ -68,10 +68,9 @@ function SettingDetail({ title, content, onBack, isVisible }) {
 
 export default function Employee({ user, setUser }) {
   const navigate = useNavigate();
-  const [imageUrl, setImageUrl] = useState("");
-  const [error, setError] = useState(null);
+  // Removed imageUrl and timeSinceJoining states as they will be derived directly from user prop
+  const [error, setError] = useState(null); // Keep error state for other potential issues
   const [selectedSetting, setSelectedSetting] = useState(null);
-  const [timeSinceJoining, setTimeSinceJoining] = useState("N/A");
   const [showDocuments, setShowDocuments] = useState(false); // State to control EmployeeDocuments visibility
   const [showPayment, setShowPayment] = useState(false); // New state to control EmployeePayment visibility
   const [showAttendance, setShowAttendance] = useState(false); // New state to control EmployeeAttendance visibility
@@ -80,9 +79,11 @@ export default function Employee({ user, setUser }) {
     setUser(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user'); // Clear user from local storage
     navigate("/login");
   };
 
+  // Directly use user prop for all employee details
   const name = user?.name || "N/A";
   const cnic = user?.cnic || "N/A";
   const phone_number = user?.phone_number || "N/A";
@@ -90,46 +91,25 @@ export default function Employee({ user, setUser }) {
   const job_title = user?.Job_title || user?.job_title || "N/A";
   const joining_date = user?.joining_date || "N/A";
   const employee_id = user?.employee_id || "N/A";
+  const timeSinceJoining = user?.time_since_joining || "N/A";
 
+  // Determine the image URL. Prioritize full URL if available, otherwise construct from relative path.
+  const employeeImageUrl = user?.image
+    ? (user.image.startsWith('http') ? user.image : `http://127.0.0.1:8000${user.image}`)
+    : "https://placehold.co/150x150/CCCCCC/FFFFFF?text=NO+IMAGE"; // Default placeholder if no image
+
+  // Removed the useEffect that was making the redundant API call
   useEffect(() => {
-    const fetchProfileData = async () => {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        handleLogout();
-        return;
-      }
-      try {
-        const response = await fetch("http://127.0.0.1:8000/api/profile/", {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.status === 401) {
-          handleLogout();
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setImageUrl(`http://127.0.0.1:8000${data.profile.image}`);
-        if (data.profile.time_since_joining) {
-          setTimeSinceJoining(data.profile.time_since_joining);
-        }
-
-      } catch (error) {
-        console.error("Error fetching profile data:", error);
-        setError("Failed to load profile data.");
-      }
-    };
-
-    fetchProfileData();
-  }, [user]); // Added user to dependency array to re-fetch if user object changes
+    // This useEffect can now be used for other side effects if needed,
+    // but the profile data fetching is no longer necessary here.
+    if (!user) {
+      setError("User data missing. Please log in again.");
+      // Optionally, force logout if user becomes null unexpectedly
+      // handleLogout();
+    } else {
+      setError(null); // Clear any previous errors if user data is present
+    }
+  }, [user]); // Depend on user prop to re-evaluate if user object changes
 
   const handleSettingClick = (settingName, settingContent) => {
     setSelectedSetting({ title: settingName, content: settingContent });
@@ -205,9 +185,9 @@ export default function Employee({ user, setUser }) {
           <div className="mx-4 mb-5 rounded-xl overflow-hidden shadow-sm">
             <div className="bg-white p-6 flex flex-col items-center justify-center">
               <div className="flex-shrink-0 mb-4">
-                {imageUrl ? (
+                {employeeImageUrl ? (
                   <img
-                    src={imageUrl}
+                    src={employeeImageUrl}
                     alt="User Profile"
                     className="w-24 h-24 rounded-full object-cover border-4 border-blue-600"
                   />

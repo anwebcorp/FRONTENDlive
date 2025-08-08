@@ -6,6 +6,7 @@ import json from "json-bigint";
 import EmployeeDocuments from './EmployeeDocuments';
 import PayAdmin from './PayAdmin'; // Import PayAdmin component
 import Attendance from './Attendance'; // Import Attendance component
+import Suppliers from "./Suppliers"; // Import the new Suppliers component
 
 const DEFAULT_AVATAR_PLACEHOLDER = "https://placehold.co/150x150/CCCCCC/FFFFFF?text=NO+IMAGE";
 const ADMIN_AVATAR_PLACEHOLDER = "https://images.unsplash.com/photo-1531297484001-80022131f5a1?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
@@ -46,16 +47,20 @@ export default function Admin({ user, setUser }) {
 
     const [showAttendancePage, setShowAttendancePage] = useState(false); // New state for Attendance page
     const [employeeForAttendance, setEmployeeForAttendance] = useState(null); // New state for Attendance employee
-
+    
+    // New state for Suppliers page
+    const [showSuppliersPage, setShowSuppliersPage] = useState(false);
 
     const navigate = useNavigate();
 
-    const fetchEmployees = async () => {
+    // ⭐ FIX: Wrapped fetchEmployees in useCallback to ensure it's stable across renders.
+    const fetchEmployees = useCallback(async () => {
         try {
-            const response = await axiosInstance.get('/profile/');
-            if (response.data && response.data.profiles && response.data.profiles.length > 0) {
-                localStorage.setItem("allProfiles", JSON.stringify(response.data.profiles));
-                processAndSetEmployees(response.data.profiles);
+            // Changed the URL to fetch all employees from the new endpoint
+            const response = await axiosInstance.get('/employees/'); // Updated line
+            if (response.data && response.data.length > 0) { // Check for response.data.length as it's an array now
+                localStorage.setItem("allProfiles", JSON.stringify(response.data)); // Store the array
+                processAndSetEmployees(response.data);
                 setError(null);
             } else {
                 const storedProfiles = localStorage.getItem("allProfiles");
@@ -67,7 +72,7 @@ export default function Admin({ user, setUser }) {
                 }
             }
         } catch (apiError) {
-            console.error("Failed to fetch profiles from API:", apiError);
+            console.error("Failed to fetch employees from API:", apiError); // Updated error message
             const storedProfiles = localStorage.getItem("allProfiles");
             if (storedProfiles) {
                 try {
@@ -81,7 +86,7 @@ export default function Admin({ user, setUser }) {
                 setError("No employee data found. Please log in again.");
             }
         }
-    };
+    }, []); // No dependencies for this useCallback
 
     const processAndSetEmployees = (profiles) => {
         const ADMIN_ID = 18;
@@ -110,10 +115,10 @@ export default function Admin({ user, setUser }) {
         setEmployees(formattedEmployees);
     };
 
+    // ⭐ FIX: Added fetchEmployees as a dependency to the useEffect hook.
     useEffect(() => {
         fetchEmployees();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [fetchEmployees]);
 
     useEffect(() => {
         if (showComingSoon) {
@@ -250,12 +255,30 @@ export default function Admin({ user, setUser }) {
         setShowComingSoon(null); // Hide coming soon if open
     }, []);
 
-    // NEW HANDLER for Attendance page
+    // ⭐ FIX: Modified handleBackFromAttendance to fetch employees again
     const handleBackFromAttendance = useCallback(() => {
         setShowAttendancePage(false);
         setEmployeeForAttendance(null);
-        // Optionally, go back to the employee detail view after attendance
-        // setSelectedEmployee(employeeForAttendance);
+        fetchEmployees(); // ⭐ This is the key change to refresh the list
+    }, [fetchEmployees]); // Now depends on fetchEmployees
+
+    // New handler for Suppliers page
+    const handleManageSuppliersClick = useCallback(() => {
+        setShowSuppliersPage(true);
+        setSelectedEmployee(null);
+        setShowDocuments(false);
+        setEmployeeForDocuments(null);
+        setShowDetailSubPage(null);
+        setEmployeeForDetailSubPage(null);
+        setShowPaymentPage(false);
+        setEmployeeForPayment(null);
+        setShowAttendancePage(false);
+        setEmployeeForAttendance(null);
+        setShowComingSoon(null);
+    }, []);
+    
+    const handleBackFromSuppliers = useCallback(() => {
+        setShowSuppliersPage(false);
     }, []);
 
     const handleNewEmployeeInputChange = (e) => {
@@ -568,7 +591,7 @@ export default function Admin({ user, setUser }) {
 
     return (
         <div className="min-h-screen bg-neutral-50 font-sans text-neutral-800 relative overflow-hidden">
-            <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedEmployee || showCreateForm || showEditForm || showDocuments || showDetailSubPage || showPaymentPage || showAttendancePage ? '-translate-x-full' : 'translate-x-0'}`}>
+            <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedEmployee || showCreateForm || showEditForm || showDocuments || showDetailSubPage || showPaymentPage || showAttendancePage || showSuppliersPage ? '-translate-x-full' : 'translate-x-0'}`}>
                 <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-between">
                     <div className="w-10"></div>
                     <h1 className="text-xl font-normal text-neutral-500 text-center absolute left-1/2 -translate-x-1/2">
@@ -604,6 +627,34 @@ export default function Admin({ user, setUser }) {
                     </div>
 
                     <div className="w-full max-w-6xl mx-auto p-6 bg-neutral-100 rounded-xl shadow-lg border border-neutral-200 mt-6">
+                        {/* ⭐ CHANGE: The Suppliers button has been moved here to give it a more prominent
+                            position outside the employee list grid, making it a primary management tool.
+                        */}
+                        <div className="mb-6">
+                            <h2 className="text-xl font-semibold text-neutral-800 mb-4 pb-2 border-b border-neutral-200">Management Tools</h2>
+                            <button
+                                onClick={handleManageSuppliersClick}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center transition-transform duration-200 ease-in-out active:scale-[0.98] shadow-md hover:shadow-lg"
+                                style={{
+                                    backgroundImage: 'linear-gradient(135deg, #4F46E5 0%, #2563EB 100%)',
+                                    border: 'none',
+                                    padding: '1rem',
+                                    color: 'white',
+                                    fontSize: '1.25rem',
+                                    borderRadius: '0.75rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <svg className="w-6 h-6 mr-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2H7a2 2 0 00-2 2v2m7-9v2"></path>
+                                </svg>
+                                Manage Suppliers
+                            </button>
+                        </div>
+                        
                         <h2 className="text-xl font-semibold text-neutral-800 mb-4 pb-2 border-b border-neutral-200">Employee List</h2>
                         <div className={`grid grid-cols-2 gap-4 ${selectedEmployee || showDocuments || showDetailSubPage || showPaymentPage || showAttendancePage ? "pointer-events-none" : ""}`}>
                             <button
@@ -618,6 +669,7 @@ export default function Admin({ user, setUser }) {
                                 </svg>
                                 <span className="font-semibold text-lg text-neutral-600">Add New</span>
                             </button>
+                            
 
                             {employees.map((emp) => (
                                 <div
@@ -906,6 +958,17 @@ export default function Admin({ user, setUser }) {
                         employeeName={employeeForAttendance.name}
                         onBack={handleBackFromAttendance}
                     />
+                </div>
+            )}
+            
+            {/* New Suppliers page render */}
+            {showSuppliersPage && (
+                 <div
+                    className={`fixed inset-0 bg-neutral-50 z-20 flex flex-col font-sans
+                                transition-transform duration-300 ease-out
+                                ${showSuppliersPage ? 'translate-x-0' : 'translate-x-full'}`}
+                >
+                    <Suppliers onBack={handleBackFromSuppliers} />
                 </div>
             )}
 

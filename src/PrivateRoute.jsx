@@ -1,41 +1,50 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 
-export function PrivateRoute({ children, allowedId, user }) {
+export default function PrivateRoute({ children, allowedId, user }) {
   console.log("PrivateRoute Check - User ID:", user?.id);
-  console.log("PrivateRoute - allowedId:", allowedId); // This is still your conceptual route ID (e.g., 18 for admin route)
-  console.log("PrivateRoute - user.isAdmin:", user?.isAdmin); // Check the isAdmin flag from the user object
+  console.log("PrivateRoute - allowedId:", allowedId);
+  console.log("PrivateRoute - user.isAdmin:", user?.isAdmin);
+  console.log("PrivateRoute - user.isSupplier:", user?.isSupplier);
+  console.log("PrivateRoute - user.isEmployee:", user?.isEmployee);
 
-  // If no user is logged in, redirect to login
+  // ⭐ IMPORTANT FIX: Check if the user state is still in its initial `undefined` loading state.
+  // If it is, don't redirect yet. The App.jsx component will handle the loading screen.
+  if (user === undefined) {
+    return null; // Or return a loading indicator if you prefer.
+  }
+
+  // Now, check if the user is logged in (i.e., user is not null)
   if (!user || typeof user.id === "undefined") {
+    console.warn("Redirecting: No user logged in.");
     return <Navigate to="/login" replace />;
   }
 
-  // Determine if the current route is intended for administrators (based on allowedId)
-  const isRouteForAdmin = allowedId === 18; // Assuming 18 means this route is for admins
+  const isUserActuallyAdmin = user?.isAdmin;
+  const isUserActuallySupplier = user?.isSupplier;
+  const isUserActuallyEmployee = user?.isEmployee;
 
-  // Determine if the logged-in user IS an administrator (based on the isAdmin flag from Login.jsx)
-  const isUserActuallyAdmin = user.isAdmin === true;
+  const isRouteForAdmin = allowedId === 18;
+  const isRouteForSupplier = allowedId === 20;
+  const isRouteForEmployee = allowedId === 0;
 
-  // Authorization Logic:
-
-  // Scenario 1: The route is meant for admins (isRouteForAdmin is true)
-  // AND the logged-in user is NOT an admin (isUserActuallyAdmin is false)
-  if (isRouteForAdmin && !isUserActuallyAdmin) {
-    console.warn("Redirecting: Route requires admin access, but logged-in user is not an admin.");
-    return <Navigate to="/login" replace />;
+  // Rule 1: Allow Admin to access any route
+  if (isUserActuallyAdmin) {
+    return children;
+  }
+  
+  // Rule 2: Allow Supplier to access supplier routes
+  if (isUserActuallySupplier && isRouteForSupplier) {
+    return children;
+  }
+  
+  // Rule 3: Allow Employee to access employee routes
+  if (isUserActuallyEmployee && isRouteForEmployee) {
+    return children;
   }
 
-  // Scenario 2: The route is NOT meant for admins (isRouteForAdmin is false, e.g., an employee route)
-  // AND the logged-in user IS an admin (isUserActuallyAdmin is true)
-  // This prevents admins from accessing regular employee pages if your policy dictates.
-  if (!isRouteForAdmin && isUserActuallyAdmin) {
-    console.warn("Redirecting: Route is not for admin access, but logged-in user IS an admin.");
-    // You might want to navigate to a different route for admins, e.g., '/admin-dashboard'
-    // return <Navigate to="/admin" replace />;
-    return <Navigate to="/login" replace />; // Redirect to login as per your original logic
-  }
-
-  // If all checks pass (user is logged in, and their role matches the route's requirement), render the children
-  return children;
+  // Default: If none of the above, redirect to the appropriate dashboard or login
+  // For this app, let's redirect to login if the role doesn't match the route
+  console.warn("Redirecting: User role does not match allowedId.");
+  return <Navigate to="/login" replace />;
 }

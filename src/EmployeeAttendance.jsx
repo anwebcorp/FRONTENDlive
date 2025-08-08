@@ -34,7 +34,7 @@ function EmployeeAttendance({ employeeId, employeeName, onBack }) {
     const fetchAttendance = async () => {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('accessToken');
+      const token = localStorage.getItem('access_token');
       if (!token) {
         setError("Authentication token not found. Please log in.");
         setLoading(false);
