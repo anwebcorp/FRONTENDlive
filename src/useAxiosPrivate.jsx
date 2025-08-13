@@ -1,52 +1,59 @@
 import { useEffect } from "react";
-import { axiosPrivate } from "./axios";
+import axiosInstance from "./axiosInstance";
 import useRefreshToken from "./useRefreshToken";
 import useAuth from "./useAuth";
 
-
 const useAxiosPrivate = () => {
+    const refresh = useRefreshToken();
+    const { auth } = useAuth();
 
-    const requestIntercept = axiosPrivate.interceptors.request.use(
-    response => response,
-    async(error) => {
-        const prevRequest = error?.config;
-        config =>{
-            if (!config.headers['Authorization']) {
-                config.headers['Authorization'] = `Bearer ${auth?.newAccessToken}`;
-                return axiosPrivate(prevRequest);
+    useEffect(() => {
+        // Request: Attach access token
+        const requestIntercept = axiosInstance.interceptors.request.use(
+            (config) => {
+                if (!config.headers["Authorization"]) {
+                    const token = auth?.accessToken || localStorage.getItem("access_token");
+                    if (token) {
+                        config.headers["Authorization"] = `Bearer ${token}`;
+                    }
+                }
+                return config;
+            },
+            (error) => Promise.reject(error)
+        );
+
+        // Response: Refresh on 401
+        const responseIntercept = axiosInstance.interceptors.response.use(
+            (response) => response,
+            async (error) => {
+                const prevRequest = error?.config;
+                if (error?.response?.status === 401 && !prevRequest?._retry) {
+                    prevRequest._retry = true;
+                    try {
+                        const newAccessToken = await refresh();
+                        prevRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+                        return axiosInstance(prevRequest);
+                    } catch (refreshError) {
+                        // Optionally: clear storage and redirect to login
+                        localStorage.removeItem('access_token');
+                        localStorage.removeItem('refreshToken');
+                        localStorage.removeItem('user');
+                        window.location.href = '/login';
+                        return Promise.reject(refreshError);
+                    }
+                }
+                return Promise.reject(error);
             }
-        return Promise.reject(error);
-        }
-    }
-    )
+        );
 
-const refresh = useRefreshToken();
-const { auth } = useAuth();
+        return () => {
+            axiosInstance.interceptors.request.eject(requestIntercept);
+            axiosInstance.interceptors.response.eject(responseIntercept);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [auth, refresh]);
 
-useEffect(()=>{
-  const responseIntercept = axiosPrivate.interceptors.response.use(
-    response => response,
-    async(error) => {
-        const prevRequest = error?.config;
-       if ( error?.response?.status === 403 && !prevRequest?.sent)  {
-        prevRequest.sent = true;
-        const newAccessToken = await refresh();
-        prevRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+    return axiosInstance;
+};
 
-        return axiosPrivate(prevRequest);
-       }
-    }
-  );
-return () =>{
-    axiosPrivate.interceptors.request.eject(requestIntercept);
-     axiosPrivate.interceptors.response.eject(responseIntercept);
-}
-
-// eslint-disable-next-line react-hooks/exhaustive-deps
-},[auth, refresh])
-
-
-    return axiosPrivate;
-}
-
-export default useAxiosPrivate
+export default useAxiosPrivate;

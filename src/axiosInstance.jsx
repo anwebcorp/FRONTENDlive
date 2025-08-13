@@ -28,10 +28,11 @@ axiosInstance.interceptors.response.use(
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
+
       const refreshToken = localStorage.getItem('refreshToken');
       if (!refreshToken) {
         // No refresh token, redirect to login
-        localStorage.removeItem('accessToken');
+        localStorage.removeItem('access_token');
         window.location.href = '/login';
         return Promise.reject(error);
       }
@@ -49,7 +50,7 @@ axiosInstance.interceptors.response.use(
         }
       } catch (refreshError) {
         // Refresh token invalid or expired: clear storage and redirect to login
-        localStorage.removeItem('accessToken');
+        localStorage.removeItem('access_token');
         localStorage.removeItem('refreshToken');
         window.location.href = '/login';
         return Promise.reject(refreshError);

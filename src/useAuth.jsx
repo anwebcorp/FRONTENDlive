@@ -1,9 +1,10 @@
 
 
-const useAuth = () => {
-  return (
-    <div>useAuth</div>
-  )
-}
+import { useContext } from 'react';
+import { AuthContext } from './AuthContextInstance.js';
 
-export default useAuth
+const useAuth = () => {
+  return useContext(AuthContext);
+};
+
+export default useAuth;

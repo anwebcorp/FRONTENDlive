@@ -1,13 +1,17 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axiosInstance from "./axiosInstance"; // Make sure this path is correct
-import companyLogo from './assets/logoCompany.jpg'; // Import your logo image
+import axiosInstance from "./axiosInstance";
+import companyLogo from './assets/logoCompany.jpg';
+import useAuth from './useAuth';
+
 
 export default function Login({ setUser }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { setAuth } = useAuth();
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -66,26 +70,31 @@ export default function Login({ setUser }) {
         return;
       }
 
+
       if (userProfile && userProfile.id && tokens?.access && tokens?.refresh) {
+
         setUser(userProfile);
         localStorage.setItem('access_token', tokens.access);
         localStorage.setItem('refreshToken', tokens.refresh);
-        // Store the full userProfile (including isAdmin, isSupplier, isEmployee flags)
         localStorage.setItem('user', JSON.stringify(userProfile));
-
+        // Update AuthContext
+        setAuth({
+          user: userProfile,
+          accessToken: tokens.access,
+          refreshToken: tokens.refresh,
+        });
 
         if (isUserAdminFromBackend) {
-            localStorage.setItem('adminData', JSON.stringify(response.data.data));
-            console.log("Login Successful as Admin. Navigating to /admin");
-            navigate("/admin", { replace: true });
-        } else if (userProfile.isSupplier) { // This condition will now correctly evaluate to true for suppliers
-            console.log("Login Successful as Supplier. Navigating to /supplier-info");
-            navigate("/supplier-info", { replace: true });
+          localStorage.setItem('adminData', JSON.stringify(response.data.data));
+          console.log("Login Successful as Admin. Navigating to /admin");
+          navigate("/admin", { replace: true });
+        } else if (userProfile.isSupplier) {
+          console.log("Login Successful as Supplier. Navigating to /supplier-info");
+          navigate("/supplier-info", { replace: true });
         } else {
-            console.log("Login Successful as Employee. Navigating to /employee");
-            navigate("/employee", { replace: true });
+          console.log("Login Successful as Employee. Navigating to /employee");
+          navigate("/employee", { replace: true });
         }
-
       } else {
         setError("Login failed: Incomplete or malformed data received from the server. Please try again.");
         console.error("Login successful, but final validation failed:", { responseData: response.data, finalUserProfile: userProfile });

@@ -8,6 +8,7 @@ import SupplierInfo from "./SupplierInfo";
 import SupplierDetails from "./SupplierDetails";
 import Suppliers from "./Suppliers"; // Make sure to import Suppliers
 import PrivateRoute from "./PrivateRoute";
+import { AuthProvider } from "./authContext";
 
 function App() {
   // ⭐ UPDATED: Initialize user to `undefined` to represent the 'loading' state
@@ -15,9 +16,9 @@ function App() {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    const accessToken = localStorage.getItem('accessToken');
+  const accessToken = localStorage.getItem('access_token');
 
-    if (storedUser && accessToken) {
+  if (storedUser && accessToken) {
       try {
         const parsedUser = JSON.parse(storedUser);
         if (parsedUser && parsedUser.id !== undefined) {
@@ -26,7 +27,7 @@ function App() {
         } else {
           console.error("App.js: Malformed user data in localStorage.");
           localStorage.removeItem('user');
-          localStorage.removeItem('accessToken');
+          localStorage.removeItem('access_token');
           localStorage.removeItem('refreshToken');
           // ⭐ UPDATED: Set to null when check is complete, but no user is found
           setUser(null);
@@ -34,13 +35,13 @@ function App() {
       } catch (e) {
         console.error("App.js: Failed to parse user from localStorage", e);
         localStorage.removeItem('user');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refreshToken');
         // ⭐ UPDATED: Set to null when check is complete, but an error occurred
         setUser(null);
       }
     } else {
-        console.log("App.js: No user or accessToken in localStorage on app load.");
+  console.log("App.js: No user or access_token in localStorage on app load.");
         // ⭐ UPDATED: Set to null when check is complete, but no user is found
         setUser(null);
     }
@@ -56,55 +57,57 @@ function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login setUser={setUser} />} />
-        <Route
-          path="/admin"
-          element={
-            <PrivateRoute allowedId={18} user={user}>
-              <Admin user={user} setUser={setUser} />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/employee"
-          element={
-            <PrivateRoute allowedId={0} user={user}>
-              <Employee user={user} setUser={setUser} />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/supplier-info"
-          element={
-            <PrivateRoute allowedId={20} user={user}>
-              <SupplierInfo user={user} setUser={setUser} />
-            </PrivateRoute>
-          }
-        />
-        {/* Route for the list of all suppliers */}
-        <Route
-          path="/suppliers"
-          element={
-            <PrivateRoute allowedId={20} user={user}>
-              <Suppliers user={user} setUser={setUser} />
-            </PrivateRoute>
-          }
-        />
-        {/* Route for a specific supplier's details */}
-        <Route
-          path="/suppliers/:supplierId"
-          element={
-            <PrivateRoute allowedId={20} user={user}>
-              <SupplierDetails user={user} setUser={setUser} />
-            </PrivateRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login setUser={setUser} />} />
+          <Route
+            path="/admin"
+            element={
+              <PrivateRoute allowedId={18} user={user}>
+                <Admin user={user} setUser={setUser} />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/employee"
+            element={
+              <PrivateRoute allowedId={0} user={user}>
+                <Employee user={user} setUser={setUser} />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/supplier-info"
+            element={
+              <PrivateRoute allowedId={20} user={user}>
+                <SupplierInfo user={user} setUser={setUser} />
+              </PrivateRoute>
+            }
+          />
+          {/* Route for the list of all suppliers */}
+          <Route
+            path="/suppliers"
+            element={
+              <PrivateRoute allowedId={20} user={user}>
+                <Suppliers user={user} setUser={setUser} />
+              </PrivateRoute>
+            }
+          />
+          {/* Route for a specific supplier's details */}
+          <Route
+            path="/suppliers/:supplierId"
+            element={
+              <PrivateRoute allowedId={20} user={user}>
+                <SupplierDetails user={user} setUser={setUser} />
+              </PrivateRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
