@@ -122,7 +122,7 @@ export default function Login({ setUser }) {
         </div>
 
         <div className="text-center mb-6">
-          <p className="text-neutral-600 text-sm">Enter your credentials to continue</p>
+          <p className="text-neutral-600 text-sm">Enter your credentials to continue lol</p>
         </div>
 
         <form className="space-y-5" onSubmit={handleLogin}>
