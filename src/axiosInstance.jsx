@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api/', // Hardcoded API base URL
+  baseURL: 'http://45.130.229.161/api/', // Updated API base URL
 });
 
 // Request interceptor to attach access token to headers
