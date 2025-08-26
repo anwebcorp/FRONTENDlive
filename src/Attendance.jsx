@@ -459,23 +459,23 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
             </table>
           </div>
 
-          <div className="flex flex-row justify-end gap-2 sm:gap-4 mt-6 w-full flex-nowrap">
+          <div className="flex flex-col sm:flex-row justify-center sm:justify-end items-center gap-3 sm:gap-4 mt-8 w-full">
             {propEmployeeId && propEmployeeName && (
                 <button
                   onClick={() => setViewMode('employeeSummary')}
-                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-2 rounded-lg shadow-md font-semibold transition-all duration-200 hover:from-blue-700 hover:to-blue-900 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-400 max-w-[210px] w-full sm:w-auto text-xs md:text-sm"
+                  className="flex items-center justify-center gap-2 bg-white border border-blue-600 text-blue-700 px-4 py-2 rounded-full shadow font-semibold transition-all duration-200 hover:bg-blue-50 hover:text-blue-800 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-300 max-w-[220px] w-full sm:w-auto text-sm md:text-base"
                   style={{ minWidth: 0 }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                   <span className="truncate block">View {propEmployeeName.split(' ')[0]}'s Attendance</span>
                 </button>
             )}
             <button
               onClick={() => setViewMode('allSummary')}
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-3 py-2 rounded-lg shadow-md font-semibold transition-all duration-200 hover:from-purple-700 hover:to-purple-900 active:scale-95 focus:outline-none focus:ring-2 focus:ring-purple-400 max-w-[170px] w-full sm:w-auto text-xs md:text-sm"
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-2 rounded-full shadow font-semibold transition-all duration-200 hover:from-purple-700 hover:to-purple-900 active:scale-95 focus:outline-none focus:ring-2 focus:ring-purple-400 max-w-[180px] w-full sm:w-auto text-sm md:text-base"
               style={{ minWidth: 0 }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
               <span className="truncate block">All Employees</span>
             </button>
           </div>
