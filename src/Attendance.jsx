@@ -301,21 +301,30 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
   }
 
   return (
-    <div className="container mx-auto p-4 bg-white shadow-lg rounded-xl max-h-screen overflow-y-auto">
+    <div className="w-full max-w-full sm:max-w-3xl mx-auto p-2 sm:p-4 bg-white shadow-lg rounded-xl max-h-screen overflow-y-auto box-border">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-800">Attendance Dashboard</h2>
+        <div className="w-full flex flex-col items-start">
+          <div className="flex items-center gap-3">
+            <span className="block w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full mr-2"></span>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-purple-700 to-blue-400 tracking-tight drop-shadow-sm">Attendance Dashboard</h2>
+          </div>
+        </div>
         <div className="flex space-x-4">
             <button
               onClick={handleBackToAdmin}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-md transition duration-200 font-bold hover:shadow-lg"
+              className="flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-800 px-3 py-2 rounded-lg shadow-sm font-semibold transition-all duration-200 hover:bg-gray-100 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gray-400 max-w-[180px] w-full sm:w-auto text-xs md:text-sm"
+              style={{ minWidth: 0 }}
             >
-              {viewMode !== 'dailyMarking' ? 'Back to Daily Marking' : 'Back to Admin'}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              <span className="truncate block">Back</span>
             </button>
             <button
               onClick={handleRefreshData}
-              className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg shadow-md transition duration-200 font-bold hover:shadow-lg"
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-lg shadow-sm font-semibold transition-all duration-200 hover:from-green-600 hover:to-green-700 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-400 max-w-[200px] w-full sm:w-auto text-sm"
+              style={{ minWidth: 0 }}
             >
-              Refresh Data
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5a2 2 0 002 2h5m5 5v5a2 2 0 01-2 2h-5m9-9a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <span className="block whitespace-nowrap">Refresh</span>
             </button>
         </div>
       </div>
@@ -450,20 +459,24 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
             </table>
           </div>
 
-          <div className="flex justify-end space-x-4 mt-6">
+          <div className="flex flex-row justify-end gap-2 sm:gap-4 mt-6 w-full flex-nowrap">
             {propEmployeeId && propEmployeeName && (
                 <button
-                onClick={() => setViewMode('employeeSummary')}
-                className="px-7 py-3 rounded-lg text-white shadow-xl hover:shadow-2xl transition duration-200 font-bold hover:scale-105 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900"
+                  onClick={() => setViewMode('employeeSummary')}
+                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-2 rounded-lg shadow-md font-semibold transition-all duration-200 hover:from-blue-700 hover:to-blue-900 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-400 max-w-[210px] w-full sm:w-auto text-xs md:text-sm"
+                  style={{ minWidth: 0 }}
                 >
-                View {propEmployeeName}'s Overall Attendance
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                  <span className="truncate block">View {propEmployeeName.split(' ')[0]}'s Attendance</span>
                 </button>
             )}
             <button
               onClick={() => setViewMode('allSummary')}
-              className="px-7 py-3 rounded-lg text-white shadow-xl hover:shadow-2xl transition duration-200 font-bold hover:scale-105 bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900"
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-3 py-2 rounded-lg shadow-md font-semibold transition-all duration-200 hover:from-purple-700 hover:to-purple-900 active:scale-95 focus:outline-none focus:ring-2 focus:ring-purple-400 max-w-[170px] w-full sm:w-auto text-xs md:text-sm"
+              style={{ minWidth: 0 }}
             >
-              View All Employees Overall Attendance
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+              <span className="truncate block">All Employees</span>
             </button>
           </div>
         </>

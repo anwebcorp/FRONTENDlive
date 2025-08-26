@@ -200,14 +200,14 @@ export default function EmployeePayment({ employeeId, employeeName, onBack }) {
                             <div className="max-w-4xl mx-auto space-y-4">
                                 {/* Employee Name & Current Month Display */}
                                 <div className="bg-white rounded-xl shadow-md p-6 text-center">
-                                    <h2 className="text-3xl font-bold text-neutral-800 mb-1">{employeeSummary.name}</h2>
-                                    <p className="text-neutral-600 text-xl mb-4">
+                                    <h2 className="text-2xl font-bold text-neutral-800 mb-1">{employeeSummary.name}</h2>
+                                    <p className="text-lg text-neutral-600 mb-4">
                                         {employeeSummary.month ? `Payslip for ${employeeSummary.month}` : "N/A"}
                                     </p>
                                     {/* Net Salary - Prominent Display */}
                                     <div className="mt-4 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-md">
                                         <p className="text-sm uppercase opacity-90">Total Net Pay</p>
-                                        <p className="text-4xl font-extrabold">Rs {employeeSummary.netSalary.toFixed(2)}</p>
+                                        <p className="text-3xl font-extrabold">Rs {employeeSummary.netSalary.toFixed(2)}</p>
                                     </div>
                                     <p className={`text-md font-semibold mt-4 ${employeeSummary.status === 'Paid' ? 'text-green-600' : 'text-red-600'}`}>
                                         Status: {employeeSummary.status}

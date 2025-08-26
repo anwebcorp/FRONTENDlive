@@ -416,14 +416,14 @@ export default function PayAdmin({ employeeId, employeeName, onBack, onPayslipUp
 
                             {/* Employee Name & Current Month Display */}
                             <div className="bg-white rounded-xl shadow-md p-6 text-center">
-                                <h2 className="text-3xl font-bold text-neutral-800 mb-1">{employeeSummary.name}</h2>
-                                <p className="text-neutral-600 text-xl mb-4">
+                                <h2 className="text-2xl font-bold text-neutral-800 mb-1">{employeeSummary.name}</h2>
+                                <p className="text-lg text-neutral-600 mb-4">
                                     {employeeSummary.month ? `Payslip for ${employeeSummary.month}` : "No Payslip Selected / New Payslip"}
                                 </p>
                                 {/* Net Salary - Prominent Display */}
                                 <div className="mt-4 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-md">
                                     <p className="text-sm uppercase opacity-90">Total Salary</p>
-                                    <p className="text-4xl font-extrabold">Rs {employeeSummary.netSalary.toFixed(2)}</p>
+                                    <p className="text-3xl font-extrabold">Rs {employeeSummary.netSalary.toFixed(2)}</p>
                                 </div>
                                 {selectedPayslip && (
                                     <p className={`text-md font-semibold mt-4 ${employeeSummary.status === 'Paid' ? 'text-green-600' : 'text-red-600'}`}>
@@ -618,7 +618,7 @@ export default function PayAdmin({ employeeId, employeeName, onBack, onPayslipUp
                             onClick={() => setShowStatusModal(true)}
                             className="flex flex-col items-center justify-center text-blue-600 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95"
                         >
-                            <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.0rg/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             <span className="text-xs font-medium">Status</span>
                         </button>
                     </footer>
