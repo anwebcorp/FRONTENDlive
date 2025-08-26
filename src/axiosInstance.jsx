@@ -38,7 +38,7 @@ axiosInstance.interceptors.response.use(
       }
 
       try {
-        const response = await axios.post('http://127.0.0.1:8000/api/token/refresh/', { refresh: refreshToken });
+        const response = await axios.post('https://employeemanagement.company/api/token/refresh/', { refresh: refreshToken });
         const { access } = response.data;
         if (access) {
           // CORRECTED: Use 'access_token' to store the new token
