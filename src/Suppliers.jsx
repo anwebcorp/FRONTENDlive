@@ -547,15 +547,24 @@ const Suppliers = ({ onBack }) => {
         return (
             <div className="p-8 bg-gray-100 text-gray-900 min-h-screen">
                 <header className="flex justify-between items-center mb-10">
-                    <button onClick={() => setShowPaymentsPage(false)} className="flex items-center text-gray-600 hover:text-gray-900 transition-colors duration-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <button
+                        onClick={() => setShowPaymentsPage(false)}
+                        className="flex items-center text-gray-600 hover:text-gray-900 transition-colors duration-300"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
-                        Back to Suppliers
+                        <span className="text-sm font-medium">Back to Suppliers</span>
                     </button>
-                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-wide">Payments for {supplierForPayments.name}</h1>
-                    <button onClick={() => setShowAddPaymentForm(true)} className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition-colors duration-300 transform hover:scale-105">
-                        Add New Payment
+                    {/* Heading: smaller, bolder, more compact */}
+                    <h1 className="text-lg font-semibold text-gray-900 tracking-wide">Payments for {supplierForPayments.name}</h1>
+                    {/* Button: smaller, tighter, more professional */}
+                    <button
+                        onClick={() => setShowAddPaymentForm(true)}
+                        className="px-4 py-1.5 bg-blue-600 text-white font-medium rounded border border-blue-700 shadow-sm hover:bg-blue-700 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                        style={{ minWidth: 140 }}
+                    >
+                        + Add Payment
                     </button>
                 </header>
 
@@ -778,16 +787,24 @@ const Suppliers = ({ onBack }) => {
 
     return (
         <div className="p-8 bg-gray-100 text-gray-900 min-h-screen">
-            <header className="flex justify-between items-center mb-10">
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
                 <button onClick={onBack} className="flex items-center text-gray-600 hover:text-gray-900 transition-colors duration-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    Back
+                    <span className="text-sm font-medium">Back</span>
                 </button>
-                <h1 className="text-3xl font-extrabold text-gray-900 tracking-wide">Suppliers Management</h1>
-                <button onClick={() => setShowCreateForm(true)} className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition-colors duration-300 transform hover:scale-105">
-                    Add New Supplier
+                {/* Heading: smaller, bolder, responsive */}
+                <h1 className="text-lg sm:text-xl font-semibold text-gray-900 tracking-wide text-left sm:text-center flex-1">
+                    Suppliers Management
+                </h1>
+                {/* Button: compact, professional, responsive */}
+                <button
+                    onClick={() => setShowCreateForm(true)}
+                    className="px-4 py-1.5 bg-blue-600 text-white font-medium rounded border border-blue-700 shadow-sm hover:bg-blue-700 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                    style={{ minWidth: 140 }}
+                >
+                    + Add Supplier
                 </button>
             </header>
 
