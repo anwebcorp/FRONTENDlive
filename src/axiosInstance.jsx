@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://45.130.229.161/api/', // Updated API base URL
+  baseURL: 'https://employeemanagement.company/api/', // Updated API base URL
 });
 
 // Request interceptor to attach access token to headers
