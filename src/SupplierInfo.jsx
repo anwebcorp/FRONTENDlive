@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react"; 
 import axiosInstance from "./axiosInstance";
 
@@ -11,6 +12,13 @@ function SupplierInfo({ user, setUser }) {
   const [payments, setPayments] = useState([]);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [paymentsError, setPaymentsError] = useState(null);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [paymentsPerPage] = useState(3);
+  const [pageNumberLimit] = useState(3);
+  const [maxPageLimit, setMaxPageLimit] = useState(3);
+  const [minPageLimit, setMinPageLimit] = useState(0);
 
   useEffect(() => {
     const fetchSupplierData = async () => {
@@ -26,34 +34,15 @@ function SupplierInfo({ user, setUser }) {
         setLoading(false);
       }
     };
-    // Fetch supplier payments
-    const fetchSupplierPayments = async () => {
-      setPaymentsLoading(true);
-      setPaymentsError(null);
-      try {
-        // API endpoint: /api/payments/ (returns all payments for logged-in supplier)
-        const res = await axiosInstance.get('payments/');
-        setPayments(res.data);
-        setPaymentsError(null);
-      } catch (err) {
-        setPaymentsError("Failed to load payments.");
-        setPayments([]);
-      } finally {
-        setPaymentsLoading(false);
-      }
-    };
-    // Ensure user is defined and is a supplier before fetching
+
     if (user && user.isSupplier) {
       fetchSupplierData();
     } else {
       setLoading(false);
       setError("You are not authorized to view this page.");
     }
-    // Fetch payments after supplierData is loaded
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Fetch payments when supplierData is loaded
   useEffect(() => {
     if (supplierData && supplierData.id) {
       // Fetch all payments for the logged-in supplier
@@ -75,12 +64,61 @@ function SupplierInfo({ user, setUser }) {
     }
   }, [supplierData]);
 
+  // Pagination logic
+  const indexOfLastPayment = currentPage * paymentsPerPage;
+  const indexOfFirstPayment = indexOfLastPayment - paymentsPerPage;
+  const currentPayments = payments.slice(indexOfFirstPayment, indexOfLastPayment);
+
+  const totalPages = Math.ceil(payments.length / paymentsPerPage);
+  const pages = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pages.push(i);
+  }
+
+  const handlePageClick = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handleNextBtn = () => {
+    setCurrentPage(prev => prev + 1);
+    if (currentPage + 1 > maxPageLimit) {
+      setMaxPageLimit(maxPageLimit + pageNumberLimit);
+      setMinPageLimit(minPageLimit + pageNumberLimit);
+    }
+  };
+
+  const handlePrevBtn = () => {
+    setCurrentPage(prev => prev - 1);
+    if ((currentPage - 1) % pageNumberLimit === 0 && currentPage !== 1) {
+      setMaxPageLimit(maxPageLimit - pageNumberLimit);
+      setMinPageLimit(minPageLimit - pageNumberLimit);
+    }
+  };
+
+  const renderPageNumbers = pages.map(number => {
+    if (number < maxPageLimit + 1 && number > minPageLimit) {
+      return (
+        <button
+          key={number}
+          onClick={() => handlePageClick(number)}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+            currentPage === number ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          {number}
+        </button>
+      );
+    } else {
+      return null;
+    }
+  });
+
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user'); // Clear user from local storage
-    window.location.href = "/login"; // Redirect to login
+    localStorage.removeItem('user');
+    window.location.href = "/login";
   };
 
   if (loading) return (
@@ -105,7 +143,6 @@ function SupplierInfo({ user, setUser }) {
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans text-neutral-800 relative overflow-hidden p-4">
-      {/* Top Navigation Bar */}
       <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-between rounded-xl mb-4">
         <h1 className="text-xl font-semibold text-neutral-900 text-center flex-grow">
           Supplier Profile
@@ -184,71 +221,91 @@ function SupplierInfo({ user, setUser }) {
             ) : payments.length === 0 ? (
               <div className="text-gray-500 text-center py-8">No payments found.</div>
             ) : (
-              <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-                {payments.map((payment) => {
-                  const paidAmount = payment.paid_amount !== undefined
-                    ? Number(payment.paid_amount)
-                    : payment.transactions?.reduce((sum, t) => sum + Number(t.paid_by_company ?? 0), 0);
-                  return (
-                    <div key={payment.id} className="bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-2xl shadow-xl p-6 flex flex-col space-y-4 hover:shadow-2xl transition-shadow duration-300">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xl font-bold text-blue-800 flex items-center">
-                          <svg className="w-6 h-6 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a5 5 0 00-10 0v2a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2z" /></svg>
-                          {payment.material_name}
-                        </h3>
+              <div>
+                <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
+                  {currentPayments.map((payment) => {
+                    const paidAmount = payment.paid_amount !== undefined
+                      ? Number(payment.paid_amount)
+                      : payment.transactions?.reduce((sum, t) => sum + Number(t.paid_by_company ?? 0), 0);
+                    return (
+                      <div key={payment.id} className="bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-2xl shadow-xl p-6 flex flex-col space-y-4 hover:shadow-2xl transition-shadow duration-300">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-xl font-bold text-blue-800 flex items-center">
+                            <svg className="w-6 h-6 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a5 5 0 00-10 0v2a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2z" /></svg>
+                            {payment.material_name}
+                          </h3>
+                          <div>
+                            {payment.status === 'Paid' && (
+                              <span className="inline-block px-3 py-1 text-xs font-bold bg-green-100 text-green-800 rounded-full">Paid</span>
+                            )}
+                            {payment.status === 'Partially Paid' && (
+                              <span className="inline-block px-3 py-1 text-xs font-bold bg-yellow-100 text-yellow-800 rounded-full">Partially Paid</span>
+                            )}
+                            {payment.status === 'Unpaid' && (
+                              <span className="inline-block px-3 py-1 text-xs font-bold bg-red-100 text-red-800 rounded-full">Unpaid</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-gray-700">
+                          <div>
+                            <span className="block text-xs text-gray-500">Quantity</span>
+                            <span className="font-semibold">{String(Number(payment.total_quantity ?? 0)).replace(/\.00$/, '')}</span>
+                          </div>
+                          <div>
+                            <span className="block text-xs text-gray-500">Rate/Unit</span>
+                            <span className="font-semibold">{String(Number(payment.rate_per_unit ?? 0)).replace(/\.00$/, '')}</span>
+                          </div>
+                          <div>
+                            <span className="block text-xs text-gray-500">Total Amount</span>
+                            <span className="font-semibold">{String(Number(payment.total_amount ?? 0)).replace(/\.00$/, '')}</span>
+                          </div>
+                          <div>
+                            <span className="block text-xs text-gray-500">Paid</span>
+                            <span className="font-semibold text-green-700">{String(Number(paidAmount ?? 0)).replace(/\.00$/, '')}</span>
+                          </div>
+                          <div>
+                            <span className="block text-xs text-gray-500">Remaining</span>
+                            <span className="font-semibold text-red-700">{String(Number(payment.remaining_amount ?? 0)).replace(/\.00$/, '')}</span>
+                          </div>
+                          <div>
+                            <span className="block text-xs text-gray-500">Created</span>
+                            <span className="font-semibold">{new Date(payment.created_at).toLocaleString()}</span>
+                          </div>
+                        </div>
                         <div>
-                          {payment.status === 'Paid' && (
-                            <span className="inline-block px-3 py-1 text-xs font-bold bg-green-100 text-green-800 rounded-full">Paid</span>
+                          <span className="block text-xs text-gray-500 mb-1">Note</span>
+                          <span className="block text-gray-800 bg-blue-50 rounded p-2 min-h-[2rem]">{payment.note || <span className="text-gray-400">No note</span>}</span>
+                        </div>
+                        <div className="flex items-center space-x-4 mt-2">
+                          <span className="block text-xs text-gray-500">Bill:</span>
+                          {payment.bill_image ? (
+                            <a href={typeof payment.bill_image === 'string' && payment.bill_image.startsWith('/') ? payment.bill_image : (payment.bill_image_url || payment.bill_image)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-semibold">View Bill</a>
+                          ) : (
+                            <span className="text-gray-400">No Bill</span>
                           )}
-                          {payment.status === 'Partially Paid' && (
-                            <span className="inline-block px-3 py-1 text-xs font-bold bg-yellow-100 text-yellow-800 rounded-full">Partially Paid</span>
-                          )}
-                          {payment.status === 'Unpaid' && (
-                            <span className="inline-block px-3 py-1 text-xs font-bold bg-red-100 text-red-800 rounded-full">Unpaid</span>
-                          )}
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4 text-gray-700">
-                        <div>
-                          <span className="block text-xs text-gray-500">Quantity</span>
-                          <span className="font-semibold">{String(Number(payment.total_quantity ?? 0)).replace(/\.00$/, '')}</span>
-                        </div>
-                        <div>
-                          <span className="block text-xs text-gray-500">Rate/Unit</span>
-                          <span className="font-semibold">{String(Number(payment.rate_per_unit ?? 0)).replace(/\.00$/, '')}</span>
-                        </div>
-                        <div>
-                          <span className="block text-xs text-gray-500">Total Amount</span>
-                          <span className="font-semibold">{String(Number(payment.total_amount ?? 0)).replace(/\.00$/, '')}</span>
-                        </div>
-                        <div>
-                          <span className="block text-xs text-gray-500">Paid</span>
-                          <span className="font-semibold text-green-700">{String(Number(paidAmount ?? 0)).replace(/\.00$/, '')}</span>
-                        </div>
-                        <div>
-                          <span className="block text-xs text-gray-500">Remaining</span>
-                          <span className="font-semibold text-red-700">{String(Number(payment.remaining_amount ?? 0)).replace(/\.00$/, '')}</span>
-                        </div>
-                        <div>
-                          <span className="block text-xs text-gray-500">Created</span>
-                          <span className="font-semibold">{new Date(payment.created_at).toLocaleString()}</span>
-                        </div>
-                      </div>
-                      <div>
-                        <span className="block text-xs text-gray-500 mb-1">Note</span>
-                        <span className="block text-gray-800 bg-blue-50 rounded p-2 min-h-[2rem]">{payment.note || <span className="text-gray-400">No note</span>}</span>
-                      </div>
-                      <div className="flex items-center space-x-4 mt-2">
-                        <span className="block text-xs text-gray-500">Bill:</span>
-                        {payment.bill_image ? (
-                          <a href={typeof payment.bill_image === 'string' && payment.bill_image.startsWith('/') ? payment.bill_image : (payment.bill_image_url || payment.bill_image)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-semibold">View Bill</a>
-                        ) : (
-                          <span className="text-gray-400">No Bill</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+                {/* Pagination Controls */}
+                <div className="mt-8 flex justify-center items-center space-x-2">
+                    <button
+                        onClick={handlePrevBtn}
+                        disabled={currentPage === pages[0]}
+                        className="px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Previous
+                    </button>
+                    {renderPageNumbers}
+                    <button
+                        onClick={handleNextBtn}
+                        disabled={currentPage === pages[pages.length - 1]}
+                        className="px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Next
+                    </button>
+                </div>
               </div>
             )}
           </div>

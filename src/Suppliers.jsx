@@ -89,6 +89,11 @@ const Suppliers = ({ onBack }) => {
     // NEW state for expanded transactions
     const [expandedPayments, setExpandedPayments] = useState({});
 
+    // NEW: State for selected payment detail
+    const [selectedPayment, setSelectedPayment] = useState(null);
+
+    // NEW: State to control payment list visibility
+    const [showPaymentList, setShowPaymentList] = useState(false);
 
     const navigate = useNavigate();
 
@@ -699,86 +704,164 @@ const Suppliers = ({ onBack }) => {
                     </div>
                 )}
 
-                {isPaymentsLoading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-                    </div>
-                ) : payments.length > 0 ? (
-                    /* This div now has a larger max height (70vh) and the grid is optimized for a better mobile experience. */
-                    <div className="bg-white shadow-xl rounded-2xl p-6 border border-gray-200 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {payments.map(payment => (
-                                <div key={payment.id} className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-                                    <div className="p-6">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <h3 className="text-xl font-bold text-gray-900">{payment.material_name}</h3>
-                                                <span className={`mt-1 inline-flex text-xs leading-5 font-semibold rounded-full px-3 py-1 ${payment.status === 'Paid' ? 'bg-green-100 text-green-800' : payment.status === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                                                    {payment.status}
-                                                </span>
-                                            </div>
-                                            <div className="flex space-x-2">
-                                                {payment.status !== 'Paid' && (
-                                                    <button onClick={() => handlePayClick(payment)} className="p-2 text-green-600 hover:text-green-700 rounded-full transition-colors duration-200">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                                                        </svg>
-                                                    </button>
-                                                )}
-                                                <button onClick={() => handleEditPaymentClick(payment)} className="p-2 text-indigo-600 hover:text-indigo-700 rounded-full transition-colors duration-200">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                                    </svg>
-                                                </button>
-                                                <button onClick={() => handleDeletePaymentClick(payment)} className="p-2 text-red-600 hover:text-red-700 rounded-full transition-colors duration-200">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2 text-sm text-gray-700">
-                                            <p><strong>Quantity:</strong> {payment.total_quantity}</p>
-                                            <p><strong>Rate:</strong> {payment.rate_per_unit}</p>
-                                            <p><strong>Total Amount:</strong> <span className="font-semibold text-gray-900">{payment.total_amount}</span></p>
-                                            <p><strong>Remaining:</strong> <span className="font-semibold text-red-600">{payment.remaining_amount}</span></p>
-                                            {payment.note && <p><strong>Note:</strong> {payment.note}</p>}
-                                            {payment.bill_image && (
-                                                <p><strong>Bill Image:</strong> <a href={constructImageUrl(payment.bill_image)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Bill</a></p>
-                                            )}
-                                        </div>
-                                        {payment.transactions.length > 0 && (
-                                            <div className="mt-4 border-t pt-4">
-                                                <button onClick={() => toggleTransactions(payment.id)} className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
-                                                    {expandedPayments[payment.id] ? 'Hide Transactions' : 'View Transactions'} ({payment.transactions.length})
-                                                </button>
-                                                {expandedPayments[payment.id] && (
-                                                    <div className="mt-3 space-y-3">
-                                                        {payment.transactions.map(transaction => (
-                                                            <div key={transaction.id} className="bg-gray-50 p-4 rounded-lg border border-gray-100 shadow-sm">
-                                                                <div className="flex justify-between items-center text-sm font-medium">
-                                                                    <p className="text-gray-900">Paid: <span className="font-bold">{transaction.paid_by_company}</span></p>
-                                                                    <p className="text-gray-500">{new Date(transaction.paid_on).toLocaleDateString()}</p>
-                                                                </div>
-                                                                {transaction.note && <p className="text-sm text-gray-600 mt-1">Note: {transaction.note}</p>}
-                                                                {transaction.receipt_image && (
-                                                                    <a href={constructImageUrl(transaction.receipt_image)} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs hover:underline mt-2 inline-block">View Receipt</a>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                {/* Button to show/hide payment list */}
+                <div className="mb-4">
+                    {!showPaymentList ? (
+                        <button
+                            onClick={() => setShowPaymentList(true)}
+                            className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition-colors"
+                        >
+                            Full list
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => setShowPaymentList(false)}
+                            className="px-4 py-2 bg-gray-300 text-gray-800 rounded shadow hover:bg-gray-400 transition-colors"
+                        >
+                            Hide list
+                        </button>
+                    )}
+                </div>
+
+                {/* Payment List UI: only visible if showPaymentList is true */}
+                {showPaymentList && (
+                    <div className="mb-8">
+                        <h2 className="text-lg font-semibold mb-3 text-gray-800">Payments List</h2>
+                        {/* Only the options (ul) are scrollable from the 3rd item */}
+                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm max-w-xl">
+                            <ul
+                                className="divide-y divide-gray-100"
+                                style={{
+                                    maxHeight: payments.length > 3 ? '12.5rem' : 'none', // scroll only if >3
+                                    overflowY: payments.length > 3 ? 'auto' : 'visible',
+                                    scrollbarWidth: 'thin'
+                                }}
+                            >
+                                {payments.map(payment => (
+                                    <li
+                                        key={payment.id}
+                                        className={`flex justify-between items-center px-5 py-3 cursor-pointer hover:bg-blue-50 transition-colors duration-150 ${selectedPayment && selectedPayment.id === payment.id ? 'bg-blue-100' : ''}`}
+                                        onClick={() => setSelectedPayment(payment)}
+                                    >
+                                        <span className="font-medium text-gray-900">{payment.material_name}</span>
+                                        <span className="text-xs text-gray-500">{payment.created_at ? new Date(payment.created_at).toLocaleDateString() : ''}</span>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     </div>
-                ) : (
-                    <div className="flex justify-center items-center h-64 text-gray-500">
-                        No payments found for this supplier.
+                )}
+
+                {/* Payment Detail UI: only visible when selected */}
+                {selectedPayment && (
+                    <div className="mb-8 bg-white rounded-xl border border-gray-200 shadow-md p-6 max-w-xl">
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-lg font-bold text-gray-900">{selectedPayment.material_name} Details</h3>
+                            <button
+                                onClick={() => setSelectedPayment(null)}
+                                className="text-gray-500 hover:text-gray-800 text-xs"
+                            >
+                                Close
+                            </button>
+                        </div>
+                        <div className="space-y-2 text-sm text-gray-700">
+                            <p><strong>Quantity:</strong> {selectedPayment.total_quantity}</p>
+                            <p><strong>Rate:</strong> {selectedPayment.rate_per_unit}</p>
+                            <p><strong>Total Amount:</strong> <span className="font-semibold text-gray-900">{selectedPayment.total_amount}</span></p>
+                            <p><strong>Remaining:</strong> <span className="font-semibold text-red-600">{selectedPayment.remaining_amount}</span></p>
+                            {selectedPayment.note && <p><strong>Note:</strong> {selectedPayment.note}</p>}
+                            {selectedPayment.bill_image && (
+                                <p><strong>Bill Image:</strong> <a href={constructImageUrl(selectedPayment.bill_image)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Bill</a></p>
+                            )}
+                            <p><strong>Date:</strong> {selectedPayment.created_at ? new Date(selectedPayment.created_at).toLocaleString() : ''}</p>
+                            <span className={`inline-block mt-2 text-xs leading-5 font-semibold rounded-full px-3 py-1 ${selectedPayment.status === 'Paid' ? 'bg-green-100 text-green-800' : selectedPayment.status === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                                {selectedPayment.status}
+                            </span>
+                        </div>
                     </div>
+                )}
+                {/* Payments grid: only visible when no payment is selected */}
+                {!selectedPayment && (
+                    isPaymentsLoading ? (
+                        <div className="flex justify-center items-center h-64">
+                            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+                        </div>
+                    ) : payments.length > 0 ? (
+                        <div className="bg-white shadow-xl rounded-2xl p-6 border border-gray-200 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {payments.map(payment => (
+                                    <div key={payment.id} className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                                        <div className="p-6">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <h3 className="text-xl font-bold text-gray-900">{payment.material_name}</h3>
+                                                    <span className={`mt-1 inline-flex text-xs leading-5 font-semibold rounded-full px-3 py-1 ${payment.status === 'Paid' ? 'bg-green-100 text-green-800' : payment.status === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                                                        {payment.status}
+                                                    </span>
+                                                </div>
+                                                <div className="flex space-x-2">
+                                                    {payment.status !== 'Paid' && (
+                                                        <button onClick={() => handlePayClick(payment)} className="p-2 text-green-600 hover:text-green-700 rounded-full transition-colors duration-200">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                                                            </svg>
+                                                        </button>
+                                                    )}
+                                                    <button onClick={() => handleEditPaymentClick(payment)} className="p-2 text-indigo-600 hover:text-indigo-700 rounded-full transition-colors duration-200">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button onClick={() => handleDeletePaymentClick(payment)} className="p-2 text-red-600 hover:text-red-700 rounded-full transition-colors duration-200">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2 text-sm text-gray-700">
+                                                <p><strong>Quantity:</strong> {payment.total_quantity}</p>
+                                                <p><strong>Rate:</strong> {payment.rate_per_unit}</p>
+                                                <p><strong>Total Amount:</strong> <span className="font-semibold text-gray-900">{payment.total_amount}</span></p>
+                                                <p><strong>Remaining:</strong> <span className="font-semibold text-red-600">{payment.remaining_amount}</span></p>
+                                                {payment.note && <p><strong>Note:</strong> {payment.note}</p>}
+                                                {payment.bill_image && (
+                                                    <p><strong>Bill Image:</strong> <a href={constructImageUrl(payment.bill_image)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Bill</a></p>
+                                                )}
+                                            </div>
+                                            {payment.transactions.length > 0 && (
+                                                <div className="mt-4 border-t pt-4">
+                                                    <button onClick={() => toggleTransactions(payment.id)} className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
+                                                        {expandedPayments[payment.id] ? 'Hide Transactions' : 'View Transactions'} ({payment.transactions.length})
+                                                    </button>
+                                                    {expandedPayments[payment.id] && (
+                                                        <div className="mt-3 space-y-3">
+                                                            {payment.transactions.map(transaction => (
+                                                                <div key={transaction.id} className="bg-gray-50 p-4 rounded-lg border border-gray-100 shadow-sm">
+                                                                    <div className="flex justify-between items-center text-sm font-medium">
+                                                                        <p className="text-gray-900">Paid: <span className="font-bold">{transaction.paid_by_company}</span></p>
+                                                                        <p className="text-gray-500">{new Date(transaction.paid_on).toLocaleDateString()}</p>
+                                                                    </div>
+                                                                    {transaction.note && <p className="text-sm text-gray-600 mt-1">Note: {transaction.note}</p>}
+                                                                    {transaction.receipt_image && (
+                                                                        <a href={constructImageUrl(transaction.receipt_image)} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs hover:underline mt-2 inline-block">View Receipt</a>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex justify-center items-center h-64 text-gray-500">
+                            No payments found for this supplier.
+                        </div>
+                    )
                 )}
             </div>
         );

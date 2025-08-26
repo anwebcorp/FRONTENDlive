@@ -11,6 +11,13 @@ const SupplierDetails = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [paymentsPerPage] = useState(3);
+    const [pageNumberLimit] = useState(3);
+    const [maxPageLimit, setMaxPageLimit] = useState(3);
+    const [minPageLimit, setMinPageLimit] = useState(0);
+
     const constructImageUrl = (path) => {
         if (path && typeof path === 'string' && path.startsWith('/')) {
             return `https://employeemanagement.company${path}`;
@@ -25,9 +32,8 @@ const SupplierDetails = () => {
             const response = await axiosInstance.get(`suppliers/${supplierId}/`);
             if (response.status === 200) {
                 setSupplier(response.data);
-                
+
                 // Corrected API call to fetch payments for the specific supplier
-                // The correct endpoint is /api/payments/ with a query parameter for the supplier ID.
                 const paymentsResponse = await axiosInstance.get(`payments/?supplier=${supplierId}`);
                 if (paymentsResponse.status === 200) {
                     setPayments(paymentsResponse.data);
@@ -46,6 +52,57 @@ const SupplierDetails = () => {
     useEffect(() => {
         fetchSupplierDetails();
     }, [fetchSupplierDetails]);
+
+    // Get current payments for the page
+    const indexOfLastPayment = currentPage * paymentsPerPage;
+    const indexOfFirstPayment = indexOfLastPayment - paymentsPerPage;
+    const currentPayments = payments.slice(indexOfFirstPayment, indexOfLastPayment);
+
+    // Calculate total pages
+    const totalPages = Math.ceil(payments.length / paymentsPerPage);
+
+    const pages = [];
+    for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+    }
+
+    const handlePageClick = (pageNumber) => {
+        setCurrentPage(pageNumber);
+    };
+
+    const handleNextBtn = () => {
+        setCurrentPage(prev => prev + 1);
+        if (currentPage + 1 > maxPageLimit) {
+            setMaxPageLimit(maxPageLimit + pageNumberLimit);
+            setMinPageLimit(minPageLimit + pageNumberLimit);
+        }
+    };
+
+    const handlePrevBtn = () => {
+        setCurrentPage(prev => prev - 1);
+        if ((currentPage - 1) % pageNumberLimit === 0 && currentPage !== 1) {
+            setMaxPageLimit(maxPageLimit - pageNumberLimit);
+            setMinPageLimit(minPageLimit - pageNumberLimit);
+        }
+    };
+
+    const renderPageNumbers = pages.map(number => {
+        if (number < maxPageLimit + 1 && number > minPageLimit) {
+            return (
+                <button
+                    key={number}
+                    onClick={() => handlePageClick(number)}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                        currentPage === number ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                >
+                    {number}
+                </button>
+            );
+        } else {
+            return null;
+        }
+    });
 
     if (isLoading) {
         return (
@@ -120,7 +177,7 @@ const SupplierDetails = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {payments.map((payment, index) => (
+                                    {currentPayments.map((payment, index) => (
                                         <tr key={index} className="hover:bg-gray-50 transition-colors duration-200">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{new Date(payment.date).toLocaleDateString()}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${payment.amount.toFixed(2)}</td>
@@ -129,6 +186,24 @@ const SupplierDetails = () => {
                                     ))}
                                 </tbody>
                             </table>
+                            {/* Pagination Controls */}
+                            <div className="mt-4 flex justify-center items-center space-x-2">
+                                <button
+                                    onClick={handlePrevBtn}
+                                    disabled={currentPage === pages[0]}
+                                    className="px-4 py-2 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Previous
+                                </button>
+                                {renderPageNumbers}
+                                <button
+                                    onClick={handleNextBtn}
+                                    disabled={currentPage === pages[pages.length - 1]}
+                                    className="px-4 py-2 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Next
+                                </button>
+                            </div>
                         </div>
                     ) : (
                         <div className="text-gray-500">No payment history found for this supplier.</div>
