@@ -563,11 +563,11 @@ const Suppliers = ({ onBack }) => {
                         <span className="text-sm font-medium">Back to Suppliers</span>
                     </button>
                     {/* Heading: smaller, bolder, more compact */}
-                    <h1 className="text-lg font-semibold text-gray-900 tracking-wide">Payments for {supplierForPayments.name}</h1>
+                    <h1 className="text-lg font-semibold text-gray-900 tracking-wide">{supplierForPayments.name}</h1>
                     {/* Button: smaller, tighter, more professional */}
                     <button
                         onClick={() => setShowAddPaymentForm(true)}
-                        className="px-4 py-1.5 bg-blue-600 text-white font-medium rounded border border-blue-700 shadow-sm hover:bg-blue-700 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                        className="px-4 py-1.5 bg-blue-600  text-white font-medium rounded border border-blue-700 shadow-sm hover:bg-blue-700 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
                         style={{ minWidth: 140 }}
                     >
                         + Add Payment
