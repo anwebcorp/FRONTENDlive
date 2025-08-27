@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import axiosInstance from './axiosInstance'; // Ensure this path is correct relative to EmployeeDocuments.jsx
 
 // Define base URL for images based on your Django setup
-
+// From your provided data, media is served from http://127.0.0.1:8000/media/
+// So, the base URL for the Django server is http://127.0.0.1:8000
 const BASE_API_URL = 'https://employeemanagement.company';
 
 // eslint-disable-next-line no-unused-vars
@@ -117,22 +118,27 @@ export default function EmployeeDocs({ employeeId, onBack, employeeName }) {
                     className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
                     onClick={handleCloseZoom}
                 >
-                    <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                        <img
-                            src={zoomedImage}
-                            alt="Zoomed Document"
-                            className="max-w-full max-h-screen object-contain" // Ensures it fits within the screen
-                            style={{ maxWidth: '90vw', maxHeight: '90vh' }} // Add these to limit size and prevent overflow
-                        />
-                        <button
-                            onClick={handleCloseZoom}
-                            className="absolute top-4 right-4 bg-white bg-opacity-75 rounded-full p-2 text-gray-800 hover:bg-opacity-100 transition-colors duration-200"
-                            aria-label="Close"
-                        >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
+                    {/* stopPropagation so clicking inside the centered box doesn't close */}
+                    <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        {/* inline-block wrapper so close button is positioned relative to the image */}
+                        <div className="relative inline-block bg-transparent p-2 rounded-md">
+                            <img
+                                src={zoomedImage}
+                                alt="Zoomed Document"
+                                // Reduced max sizes so the image appears medium rather than extremely large
+                                className="object-contain max-w-[60vw] max-h-[70vh] rounded-md shadow-lg"
+                            />
+                            {/* Close button positioned relative to the image (top-right of image) */}
+                            <button
+                                onClick={handleCloseZoom}
+                                className="absolute -top-2 -right-2 bg-white bg-opacity-90 rounded-full p-2 text-gray-800 hover:bg-opacity-100 transition-colors duration-200 shadow-md"
+                                aria-label="Close"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
