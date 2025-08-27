@@ -563,7 +563,6 @@ const Suppliers = ({ onBack }) => {
                         <span className="text-sm font-medium">Back to Suppliers</span>
                     </button>
                     {/* Heading: smaller, bolder, more compact */}
-                    <h1 className="text-lg font-semibold text-gray-900 tracking-wide">{supplierForPayments.name}</h1>
                     {/* Button: smaller, tighter, more professional */}
                     <button
                         onClick={() => setShowAddPaymentForm(true)}
