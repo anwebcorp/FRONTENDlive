@@ -255,7 +255,11 @@ function SupplierInfo({ user, setUser }) {
                     </div>
                     <div>
                       <span className="block text-xs text-gray-500 mb-1">Note</span>
-                      <span className="block text-gray-800 bg-blue-50 rounded p-2 min-h-[2rem]">{payment.note || <span className="text-gray-400">No note</span>}</span>
+                      <span className="block text-gray-800 bg-blue-50 rounded p-2 min-h-[2rem] break-words w-full max-w-full overflow-hidden">
+                        {payment.note
+                          ? payment.note
+                          : <span className="text-gray-400">No note</span>}
+                      </span>
                     </div>
                     <div className="flex items-center space-x-4 mt-2">
                       <span className="block text-xs text-gray-500">Bill:</span>
@@ -277,7 +281,7 @@ function SupplierInfo({ user, setUser }) {
                       <div className="mt-1 border-t pt-3 space-y-3">
                         <div className="font-semibold text-blue-800 text-sm mb-1">Transactions:</div>
                         {payment.transactions.map((transaction) => (
-                          <div key={transaction.id} className="bg-blue-50 rounded p-2 text-sm flex flex-col md:flex-row md:items-center md:space-x-4">
+                          <div key={transaction.id} className="bg-blue-50 rounded p-2 text-sm flex flex-col md:flex-row md:items-center md:space-x-4 w-full">
                             <span>
                               <strong>Paid:</strong> {transaction.paid_by_company}
                             </span>
@@ -288,7 +292,7 @@ function SupplierInfo({ user, setUser }) {
                                 : "N/A"}
                             </span>
                             {transaction.note && (
-                              <span>
+                              <span className="block bg-blue-100 rounded px-2 py-1 my-1 text-gray-700 break-words w-full max-w-full overflow-hidden">
                                 <strong>Note:</strong> {transaction.note}
                               </span>
                             )}
