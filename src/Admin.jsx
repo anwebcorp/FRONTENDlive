@@ -51,6 +51,9 @@ export default function Admin({ user, setUser }) {
     // New state for Suppliers page
     const [showSuppliersPage, setShowSuppliersPage] = useState(false);
 
+    // ⭐ NEW STATE: State to manage the visibility of the menu.
+    const [showMenu, setShowMenu] = useState(false);
+
     const navigate = useNavigate();
 
     // ⭐ FIX: Wrapped fetchEmployees in useCallback to ensure it's stable across renders.
@@ -149,6 +152,7 @@ export default function Admin({ user, setUser }) {
         }
     }, [editEmployeeSuccess, editEmployeeError]);
 
+    // ⭐ MODIFIED: Handle logout and close menu
     const handleLogout = () => {
         setUser(null);
         localStorage.removeItem("accessToken");
@@ -156,6 +160,7 @@ export default function Admin({ user, setUser }) {
         localStorage.removeItem("user");
         localStorage.removeItem("allProfiles");
         navigate("/login");
+        setShowMenu(false); // Close menu after logout
     };
 
     const handleEmployeeClick = (employee) => {
@@ -262,7 +267,7 @@ export default function Admin({ user, setUser }) {
         fetchEmployees(); // ⭐ This is the key change to refresh the list
     }, [fetchEmployees]); // Now depends on fetchEmployees
 
-    // New handler for Suppliers page
+    // ⭐ MODIFIED: New handler for Suppliers page, now closes the menu.
     const handleManageSuppliersClick = useCallback(() => {
         setShowSuppliersPage(true);
         setSelectedEmployee(null);
@@ -275,6 +280,7 @@ export default function Admin({ user, setUser }) {
         setShowAttendancePage(false);
         setEmployeeForAttendance(null);
         setShowComingSoon(null);
+        setShowMenu(false); // Close menu after click
     }, []);
     
     const handleBackFromSuppliers = useCallback(() => {
@@ -592,23 +598,79 @@ export default function Admin({ user, setUser }) {
     return (
         <div className="min-h-screen bg-neutral-50 font-sans text-neutral-800 relative overflow-hidden">
             <div className={`absolute inset-0 transition-transform duration-300 ease-out ${selectedEmployee || showCreateForm || showEditForm || showDocuments || showDetailSubPage || showPaymentPage || showAttendancePage || showSuppliersPage ? '-translate-x-full' : 'translate-x-0'}`}>
+                {/* ⭐ MODIFIED: Header with menu button and logo */}
                 <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-between">
-                    <div className="w-10"></div>
+                    {/* Menu Button */}
+                    <button
+                        onClick={() => setShowMenu(!showMenu)}
+                        className="group relative flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200 ease-in-out shadow-md"
+                        title="Menu"
+                    >
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                        </svg>
+                        <span className="absolute left-full ml-3 px-3 py-1 bg-neutral-800 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity duration-200 ease-in-out whitespace-nowrap pointer-events-none">
+                            Menu
+                        </span>
+                    </button>
                     <h1 className="text-xl font-normal text-neutral-500 text-center absolute left-1/2 -translate-x-1/2">
                         <span className="font-semibold text-neutral-900">Admin</span> Dashboard
                     </h1>
-                    <button
-                        onClick={handleLogout}
-                        className="group relative flex items-center justify-center w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 active:bg-red-700 transition-colors duration-200 ease-in-out shadow-md"
-                        title="Sign Out"
-                    >
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                        </svg>
-                        <span className="absolute right-full mr-3 px-3 py-1 bg-neutral-800 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity duration-200 ease-in-out whitespace-nowrap pointer-events-none">
+                    <div className="w-10"></div> {/* Placeholder to balance the layout */}
+                </div>
+
+                {/* ⭐ NEW: The Menu overlay */}
+                <div
+                    className={`fixed inset-0 bg-neutral-50 z-40 transform transition-transform duration-300 ease-in-out ${
+                        showMenu ? 'translate-x-0' : '-translate-x-full'
+                    }`}
+                >
+                    <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-start">
+                        <button
+                            onClick={() => setShowMenu(false)}
+                            className="text-blue-600 text-lg font-normal flex items-center active:text-blue-700"
+                        >
+                            <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            Back
+                        </button>
+                    </div>
+                    <div className="flex flex-col p-4 space-y-4">
+                        {/* ⭐ MOVED: Manage Suppliers button */}
+                        <button
+                            onClick={handleManageSuppliersClick}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center transition-transform duration-200 ease-in-out active:scale-[0.98] shadow-md hover:shadow-lg"
+                            style={{
+                                backgroundImage: 'linear-gradient(135deg, #4F46E5 0%, #2563EB 100%)',
+                                border: 'none',
+                                padding: '1rem',
+                                color: 'white',
+                                fontSize: '1.25rem',
+                                borderRadius: '0.75rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            <svg className="w-6 h-6 mr-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2H7a2 2 0 00-2 2v2m7-9v2"></path>
+                            </svg>
+                            Manage Suppliers
+                        </button>
+
+                        {/* ⭐ MOVED: Logout button */}
+                        <button
+                            onClick={handleLogout}
+                            className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center transition-transform duration-200 ease-in-out active:scale-[0.98] shadow-md hover:shadow-lg"
+                        >
+                            <svg className="w-6 h-6 mr-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
                             Sign Out
-                        </span>
-                    </button>
+                        </button>
+                    </div>
                 </div>
 
                 <div className="pt-4 pb-8 h-[calc(100vh-60px)] overflow-y-auto">
@@ -627,33 +689,7 @@ export default function Admin({ user, setUser }) {
                     </div>
 
                     <div className="w-full max-w-6xl mx-auto p-6 bg-neutral-100 rounded-xl shadow-lg border border-neutral-200 mt-6">
-                        {/* ⭐ CHANGE: The Suppliers button has been moved here to give it a more prominent
-                            position outside the employee list grid, making it a primary management tool.
-                        */}
-                        <div className="mb-6">
-                            <h2 className="text-xl font-semibold text-neutral-800 mb-4 pb-2 border-b border-neutral-200">Management Tools</h2>
-                            <button
-                                onClick={handleManageSuppliersClick}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center transition-transform duration-200 ease-in-out active:scale-[0.98] shadow-md hover:shadow-lg"
-                                style={{
-                                    backgroundImage: 'linear-gradient(135deg, #4F46E5 0%, #2563EB 100%)',
-                                    border: 'none',
-                                    padding: '1rem',
-                                    color: 'white',
-                                    fontSize: '1.25rem',
-                                    borderRadius: '0.75rem',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                            >
-                                <svg className="w-6 h-6 mr-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2H7a2 2 0 00-2 2v2m7-9v2"></path>
-                                </svg>
-                                Manage Suppliers
-                            </button>
-                        </div>
+                        {/* ⭐ REMOVED: The Suppliers button has been moved to the menu. */}
                         
                         <h2 className="text-xl font-semibold text-neutral-800 mb-4 pb-2 border-b border-neutral-200">Employee List</h2>
                         <div className={`grid grid-cols-2 gap-4 ${selectedEmployee || showDocuments || showDetailSubPage || showPaymentPage || showAttendancePage ? "pointer-events-none" : ""}`}>
