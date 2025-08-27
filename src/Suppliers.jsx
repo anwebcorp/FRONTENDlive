@@ -22,18 +22,15 @@ const Suppliers = ({ onBack }) => {
         }
     });
     const [createError, setCreateError] = useState(null);
-    const [createSuccess, setCreateSuccess] = useState(false);
 
     // State for editing a supplier
     const [showEditForm, setShowEditForm] = useState(false);
     const [currentSupplierToEdit, setCurrentSupplierToEdit] = useState(null);
     const [editError, setEditError] = useState(null);
-    const [editSuccess, setEditSuccess] = useState(false);
 
     // State for deleting a supplier
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [supplierToDelete, setSupplierToDelete] = useState(null);
-    const [deleteSuccess, setDeleteSuccess] = useState(false);
     const [deleteError, setDeleteError] = useState(null);
 
     // State for viewing supplier details
@@ -59,7 +56,6 @@ const Suppliers = ({ onBack }) => {
         note: '',
     });
     const [billImageFile, setBillImageFile] = useState(null);
-    const [addPaymentSuccess, setAddPaymentSuccess] = useState(false);
     const [addPaymentError, setAddPaymentError] = useState(null);
 
     // States for editing and deleting payments
@@ -67,12 +63,10 @@ const Suppliers = ({ onBack }) => {
     const [currentPaymentToEdit, setCurrentPaymentToEdit] = useState(null);
     const [editPaymentFile, setEditPaymentFile] = useState(null);
     const [removePaymentImageFlag, setRemovePaymentImageFlag] = useState(false);
-    const [editPaymentSuccess, setEditPaymentSuccess] = useState(false);
     const [editPaymentError, setEditPaymentError] = useState(null);
 
     const [showDeletePaymentModal, setShowDeletePaymentModal] = useState(false);
     const [paymentToDelete, setPaymentToDelete] = useState(null);
-    const [deletePaymentSuccess, setDeletePaymentSuccess] = useState(false);
     const [deletePaymentError, setDeletePaymentError] = useState(null);
 
     // NEW States for handling payment transactions
@@ -83,17 +77,10 @@ const Suppliers = ({ onBack }) => {
         note: '',
     });
     const [receiptImageFile, setReceiptImageFile] = useState(null);
-    const [addTransactionSuccess, setAddTransactionSuccess] = useState(false);
     const [addTransactionError, setAddTransactionError] = useState(null);
 
     // NEW state for expanded transactions
     const [expandedPayments, setExpandedPayments] = useState({});
-
-    // NEW: State for selected payment detail
-    const [selectedPayment, setSelectedPayment] = useState(null);
-
-    // NEW: State to control payment list visibility
-    const [showPaymentList, setShowPaymentList] = useState(false);
 
     const navigate = useNavigate();
 
@@ -103,7 +90,6 @@ const Suppliers = ({ onBack }) => {
         }
         return path;
     };
-
 
     const fetchSuppliers = useCallback(async () => {
         setIsLoading(true);
@@ -142,7 +128,6 @@ const Suppliers = ({ onBack }) => {
         }
     }, []);
 
-
     useEffect(() => {
         fetchSuppliers();
     }, [fetchSuppliers]);
@@ -168,7 +153,6 @@ const Suppliers = ({ onBack }) => {
     const handleCreateSupplierSubmit = async (e) => {
         e.preventDefault();
         setCreateError(null);
-        setCreateSuccess(false);
 
         if (!newSupplierData.user.password) {
             setCreateError('Password is required.');
@@ -197,7 +181,6 @@ const Suppliers = ({ onBack }) => {
                 },
             });
             if (response.status === 201) {
-                setCreateSuccess(true);
                 setShowCreateForm(false);
                 setNewSupplierData({
                     name: '',
@@ -254,7 +237,6 @@ const Suppliers = ({ onBack }) => {
     const handleUpdateSupplierSubmit = async (e) => {
         e.preventDefault();
         setEditError(null);
-        setEditSuccess(false);
 
         if (!currentSupplierToEdit || !currentSupplierToEdit.id) {
             setEditError('No supplier selected for editing.');
@@ -288,7 +270,6 @@ const Suppliers = ({ onBack }) => {
                 },
             });
             if (response.status === 200) {
-                setEditSuccess(true);
                 setShowEditForm(false);
                 setCurrentSupplierToEdit(null);
                 setEditProfileImage(null);
@@ -312,12 +293,10 @@ const Suppliers = ({ onBack }) => {
         if (!supplierToDelete) return;
 
         setDeleteError(null);
-        setDeleteSuccess(false);
 
         try {
             const response = await axiosInstance.delete(`suppliers/${supplierToDelete.id}/`);
             if (response.status === 204) {
-                setDeleteSuccess(true);
                 fetchSuppliers();
             }
         } catch (err) {
@@ -356,7 +335,6 @@ const Suppliers = ({ onBack }) => {
     const handleNewPaymentSubmit = async (e) => {
         e.preventDefault();
         setAddPaymentError(null);
-        setAddPaymentSuccess(false);
 
         if (!supplierForPayments) return;
 
@@ -379,7 +357,6 @@ const Suppliers = ({ onBack }) => {
                 },
             });
             if (response.status === 201) {
-                setAddPaymentSuccess(true);
                 setShowAddPaymentForm(false);
                 setNewPaymentData({
                     material_name: '',
@@ -418,7 +395,6 @@ const Suppliers = ({ onBack }) => {
     const handleUpdatePaymentSubmit = async (e) => {
         e.preventDefault();
         setEditPaymentError(null);
-        setEditPaymentSuccess(false);
 
         if (!currentPaymentToEdit || !currentPaymentToEdit.id) {
             setEditPaymentError('No payment selected for editing.');
@@ -446,7 +422,6 @@ const Suppliers = ({ onBack }) => {
                 },
             });
             if (response.status === 200) {
-                setEditPaymentSuccess(true);
                 setShowEditPaymentForm(false);
                 setCurrentPaymentToEdit(null);
                 setEditPaymentFile(null);
@@ -470,12 +445,10 @@ const Suppliers = ({ onBack }) => {
         if (!paymentToDelete) return;
 
         setDeletePaymentError(null);
-        setDeletePaymentSuccess(false);
 
         try {
             const response = await axiosInstance.delete(`payments/${paymentToDelete.id}/`);
             if (response.status === 204) {
-                setDeletePaymentSuccess(true);
                 fetchPayments(supplierForPayments.id);
             }
         } catch (err) {
@@ -510,7 +483,6 @@ const Suppliers = ({ onBack }) => {
     const handleNewTransactionSubmit = async (e) => {
         e.preventDefault();
         setAddTransactionError(null);
-        setAddTransactionSuccess(false);
 
         if (!paymentForTransaction) return;
 
@@ -528,9 +500,8 @@ const Suppliers = ({ onBack }) => {
                 },
             });
             if (response.status === 201) {
-                setAddTransactionSuccess(true);
                 setShowAddTransactionModal(false);
-                fetchPayments(supplierForPayments.id); // Refresh payments to show new transaction
+                fetchPayments(supplierForPayments.id);
             }
         } catch (err) {
             const errorMsg = err.response?.data?.detail || 'Failed to add transaction.';
@@ -551,48 +522,44 @@ const Suppliers = ({ onBack }) => {
     if (showPaymentsPage) {
         return (
             <div className="p-8 bg-gray-100 text-gray-900 min-h-screen">
-                <header className="flex justify-between items-center mb-10">
+                <header className="flex justify-between items-center mb-8">
                     <button
                         onClick={() => setShowPaymentsPage(false)}
                         className="flex items-center text-gray-600 hover:text-gray-900 transition-colors duration-300"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
-                        <span className="text-sm font-medium">Back to Suppliers</span>
+                        Back to Suppliers
                     </button>
-                    {/* Heading: smaller, bolder, more compact */}
-                    <h1 className="text-lg font-semibold text-gray-900 tracking-wide">Payments for {supplierForPayments.name}</h1>
-                    {/* Button: smaller, tighter, more professional */}
+                    <h1 className="text-xl font-semibold text-gray-900 tracking-wide">
+                         {supplierForPayments.name}
+                    </h1>
                     <button
                         onClick={() => setShowAddPaymentForm(true)}
-                        className="px-4 py-1.5 bg-blue-600 text-white font-medium rounded border border-blue-700 shadow-sm hover:bg-blue-700 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                        style={{ minWidth: 140 }}
+                        className="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg shadow hover:bg-blue-700 transition"
+                        style={{ minWidth: 160 }}
                     >
-                        + Add Payment
+                        + Add New Payment
                     </button>
                 </header>
 
-                {addPaymentSuccess && <div className="p-4 mb-6 text-sm text-green-800 bg-green-100 rounded-lg shadow-md">Payment created successfully!</div>}
                 {addPaymentError && <div className="p-4 mb-6 text-sm text-red-800 bg-red-100 rounded-lg shadow-md">{addPaymentError}</div>}
-                {editPaymentSuccess && <div className="p-4 mb-6 text-sm text-green-800 bg-green-100 rounded-lg shadow-md">Payment updated successfully!</div>}
                 {editPaymentError && <div className="p-4 mb-6 text-sm text-red-800 bg-red-100 rounded-lg shadow-md">{editPaymentError}</div>}
-                {deletePaymentSuccess && <div className="p-4 mb-6 text-sm text-green-800 bg-green-100 rounded-lg shadow-md">Payment deleted successfully!</div>}
                 {deletePaymentError && <div className="p-4 mb-6 text-sm text-red-800 bg-red-100 rounded-lg shadow-md">{deletePaymentError}</div>}
-                {addTransactionSuccess && <div className="p-4 mb-6 text-sm text-green-800 bg-green-100 rounded-lg shadow-md">Transaction added successfully!</div>}
                 {addTransactionError && <div className="p-4 mb-6 text-sm text-red-800 bg-red-100 rounded-lg shadow-md">{addTransactionError}</div>}
 
                 {/* Add Payment Form Modal */}
                 {showAddPaymentForm && supplierForPayments && (
                     <div className="fixed inset-0 bg-gray-600 bg-opacity-70 flex justify-center items-center z-50 p-4">
                         <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-3xl overflow-y-auto max-h-[90vh] border border-gray-200">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-6">Add New Payment for {supplierForPayments.name}</h2>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-6">Add New Payment for {supplierForPayments.name}</h2>
                             <form onSubmit={handleNewPaymentSubmit}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                     <input type="text" name="material_name" value={newPaymentData.material_name} onChange={handleNewPaymentChange} placeholder="Material Name" className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500" required />
                                     <input type="number" name="total_quantity" value={newPaymentData.total_quantity} onChange={handleNewPaymentChange} placeholder="Total Quantity" className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500" required />
                                     <input type="number" name="rate_per_unit" value={newPaymentData.rate_per_unit} onChange={handleNewPaymentChange} placeholder="Rate Per Unit" className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-                                    <input type="text" name="note" value={newPaymentData.note} onChange={handleNewPaymentChange} placeholder="Note" className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                    <input type="text" name="note" value={newPaymentData.note} onChange={handleNewPaymentChange} placeholder="Note" className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500 break-words overflow-hidden text-ellipsis" style={{ wordBreak: "break-word", whiteSpace: "pre-line", minHeight: 44 }} />
                                     <div>
                                         <label className="block text-sm font-medium text-gray-600 mb-1">Bill Image</label>
                                         <input type="file" name="bill_image" onChange={handleNewPaymentChange} className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200" />
@@ -611,13 +578,13 @@ const Suppliers = ({ onBack }) => {
                 {showEditPaymentForm && currentPaymentToEdit && (
                     <div className="fixed inset-0 bg-gray-600 bg-opacity-70 flex justify-center items-center z-50 p-4">
                         <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-3xl overflow-y-auto max-h-[90vh] border border-gray-200">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Payment for {currentPaymentToEdit.material_name}</h2>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-6">Edit Payment for {currentPaymentToEdit.material_name}</h2>
                             <form onSubmit={handleUpdatePaymentSubmit}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                     <input type="text" name="material_name" value={currentPaymentToEdit.material_name} onChange={handleEditPaymentChange} placeholder="Material Name" className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500" required />
                                     <input type="number" name="total_quantity" value={currentPaymentToEdit.total_quantity} onChange={handleEditPaymentChange} placeholder="Total Quantity" className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500" required />
                                     <input type="number" name="rate_per_unit" value={currentPaymentToEdit.rate_per_unit} onChange={handleEditPaymentChange} placeholder="Rate Per Unit" className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-                                    <input type="text" name="note" value={currentPaymentToEdit.note} onChange={handleEditPaymentChange} placeholder="Note" className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                    <input type="text" name="note" value={currentPaymentToEdit.note} onChange={handleEditPaymentChange} placeholder="Note" className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500 break-words overflow-hidden text-ellipsis" style={{ wordBreak: "break-word", whiteSpace: "pre-line", minHeight: 44 }} />
                                     <div>
                                         <label className="block text-sm font-medium text-gray-600 mb-1">Bill Image</label>
                                         <input type="file" name="bill_image" onChange={handleEditPaymentChange} className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200" />
@@ -644,7 +611,7 @@ const Suppliers = ({ onBack }) => {
                 {showDeletePaymentModal && paymentToDelete && (
                     <div className="fixed inset-0 bg-gray-600 bg-opacity-70 flex justify-center items-center z-50 p-4">
                         <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-4">Confirm Deletion</h2>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">Confirm Deletion</h2>
                             <p className="mb-6 text-gray-700">Are you sure you want to delete the payment for material <span className="font-semibold text-gray-900">**{paymentToDelete.material_name}**</span>?</p>
                             <div className="flex justify-end space-x-4">
                                 <button onClick={() => setShowDeletePaymentModal(false)} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md shadow-md hover:bg-gray-300 transition-colors duration-300">Cancel</button>
@@ -659,7 +626,7 @@ const Suppliers = ({ onBack }) => {
                     <div className="fixed inset-0 bg-gray-600 bg-opacity-70 flex justify-center items-center z-50 p-4">
                         <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh] border border-gray-200">
                             <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-2xl font-bold text-gray-900">Add Transaction for: <span className="font-semibold text-blue-600">{paymentForTransaction.material_name}</span></h2>
+                                <h2 className="text-xl font-semibold text-gray-900">Add Transaction for: <span className="font-semibold text-blue-600">{paymentForTransaction.material_name}</span></h2>
                                 <button onClick={() => setShowAddTransactionModal(false)} className="text-gray-600 hover:text-gray-900 transition-colors duration-300">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -683,7 +650,8 @@ const Suppliers = ({ onBack }) => {
                                         value={newTransactionData.note}
                                         onChange={handleNewTransactionChange}
                                         placeholder="Transaction Note (Optional)"
-                                        className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500 break-words overflow-hidden text-ellipsis"
+                                        style={{ wordBreak: "break-word", whiteSpace: "pre-line", minHeight: 44 }}
                                     />
                                     <div>
                                         <label className="block text-sm font-medium text-gray-600 mb-1">Receipt Image (Optional)</label>
@@ -704,164 +672,85 @@ const Suppliers = ({ onBack }) => {
                     </div>
                 )}
 
-                {/* Button to show/hide payment list */}
-                <div className="mb-4">
-                    {!showPaymentList ? (
-                        <button
-                            onClick={() => setShowPaymentList(true)}
-                            className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition-colors"
-                        >
-                            Full list
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => setShowPaymentList(false)}
-                            className="px-4 py-2 bg-gray-300 text-gray-800 rounded shadow hover:bg-gray-400 transition-colors"
-                        >
-                            Hide list
-                        </button>
-                    )}
-                </div>
-
-                {/* Payment List UI: only visible if showPaymentList is true */}
-                {showPaymentList && (
-                    <div className="mb-8">
-                        <h2 className="text-lg font-semibold mb-3 text-gray-800">Payments List</h2>
-                        {/* Only the options (ul) are scrollable from the 3rd item */}
-                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm max-w-xl">
-                            <ul
-                                className="divide-y divide-gray-100"
-                                style={{
-                                    maxHeight: payments.length > 3 ? '12.5rem' : 'none', // scroll only if >3
-                                    overflowY: payments.length > 3 ? 'auto' : 'visible',
-                                    scrollbarWidth: 'thin'
-                                }}
-                            >
-                                {payments.map(payment => (
-                                    <li
-                                        key={payment.id}
-                                        className={`flex justify-between items-center px-5 py-3 cursor-pointer hover:bg-blue-50 transition-colors duration-150 ${selectedPayment && selectedPayment.id === payment.id ? 'bg-blue-100' : ''}`}
-                                        onClick={() => setSelectedPayment(payment)}
-                                    >
-                                        <span className="font-medium text-gray-900">{payment.material_name}</span>
-                                        <span className="text-xs text-gray-500">{payment.created_at ? new Date(payment.created_at).toLocaleDateString() : ''}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
+                {isPaymentsLoading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
                     </div>
-                )}
-
-                {/* Payment Detail UI: only visible when selected */}
-                {selectedPayment && (
-                    <div className="mb-8 bg-white rounded-xl border border-gray-200 shadow-md p-6 max-w-xl">
-                        <div className="flex justify-between items-center mb-2">
-                            <h3 className="text-lg font-bold text-gray-900">{selectedPayment.material_name} Details</h3>
-                            <button
-                                onClick={() => setSelectedPayment(null)}
-                                className="text-gray-500 hover:text-gray-800 text-xs"
-                            >
-                                Close
-                            </button>
-                        </div>
-                        <div className="space-y-2 text-sm text-gray-700">
-                            <p><strong>Quantity:</strong> {selectedPayment.total_quantity}</p>
-                            <p><strong>Rate:</strong> {selectedPayment.rate_per_unit}</p>
-                            <p><strong>Total Amount:</strong> <span className="font-semibold text-gray-900">{selectedPayment.total_amount}</span></p>
-                            <p><strong>Remaining:</strong> <span className="font-semibold text-red-600">{selectedPayment.remaining_amount}</span></p>
-                            {selectedPayment.note && <p><strong>Note:</strong> {selectedPayment.note}</p>}
-                            {selectedPayment.bill_image && (
-                                <p><strong>Bill Image:</strong> <a href={constructImageUrl(selectedPayment.bill_image)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Bill</a></p>
-                            )}
-                            <p><strong>Date:</strong> {selectedPayment.created_at ? new Date(selectedPayment.created_at).toLocaleString() : ''}</p>
-                            <span className={`inline-block mt-2 text-xs leading-5 font-semibold rounded-full px-3 py-1 ${selectedPayment.status === 'Paid' ? 'bg-green-100 text-green-800' : selectedPayment.status === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                                {selectedPayment.status}
-                            </span>
-                        </div>
-                    </div>
-                )}
-                {/* Payments grid: only visible when no payment is selected */}
-                {!selectedPayment && (
-                    isPaymentsLoading ? (
-                        <div className="flex justify-center items-center h-64">
-                            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-                        </div>
-                    ) : payments.length > 0 ? (
-                        <div className="bg-white shadow-xl rounded-2xl p-6 border border-gray-200 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {payments.map(payment => (
-                                    <div key={payment.id} className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-                                        <div className="p-6">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div>
-                                                    <h3 className="text-xl font-bold text-gray-900">{payment.material_name}</h3>
-                                                    <span className={`mt-1 inline-flex text-xs leading-5 font-semibold rounded-full px-3 py-1 ${payment.status === 'Paid' ? 'bg-green-100 text-green-800' : payment.status === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                                                        {payment.status}
-                                                    </span>
-                                                </div>
-                                                <div className="flex space-x-2">
-                                                    {payment.status !== 'Paid' && (
-                                                        <button onClick={() => handlePayClick(payment)} className="p-2 text-green-600 hover:text-green-700 rounded-full transition-colors duration-200">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                                                            </svg>
-                                                        </button>
-                                                    )}
-                                                    <button onClick={() => handleEditPaymentClick(payment)} className="p-2 text-indigo-600 hover:text-indigo-700 rounded-full transition-colors duration-200">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                                        </svg>
-                                                    </button>
-                                                    <button onClick={() => handleDeletePaymentClick(payment)} className="p-2 text-red-600 hover:text-red-700 rounded-full transition-colors duration-200">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
+                ) : payments.length > 0 ? (
+                    <div className="bg-white shadow-xl rounded-2xl p-6 border border-gray-200 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {payments.map(payment => (
+                                <div key={payment.id} className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                                    <div className="p-6">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-gray-900">{payment.material_name}</h3>
+                                                <span className={`mt-1 inline-flex text-xs leading-5 font-semibold rounded-full px-3 py-1 ${payment.status === 'Paid' ? 'bg-green-100 text-green-800' : payment.status === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                                                    {payment.status}
+                                                </span>
                                             </div>
-                                            <div className="space-y-2 text-sm text-gray-700">
-                                                <p><strong>Quantity:</strong> {payment.total_quantity}</p>
-                                                <p><strong>Rate:</strong> {payment.rate_per_unit}</p>
-                                                <p><strong>Total Amount:</strong> <span className="font-semibold text-gray-900">{payment.total_amount}</span></p>
-                                                <p><strong>Remaining:</strong> <span className="font-semibold text-red-600">{payment.remaining_amount}</span></p>
-                                                {payment.note && <p><strong>Note:</strong> {payment.note}</p>}
-                                                {payment.bill_image && (
-                                                    <p><strong>Bill Image:</strong> <a href={constructImageUrl(payment.bill_image)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Bill</a></p>
+                                            <div className="flex space-x-2">
+                                                {payment.status !== 'Paid' && (
+                                                    <button onClick={() => handlePayClick(payment)} className="p-2 text-green-600 hover:text-green-700 rounded-full transition-colors duration-200">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                                                        </svg>
+                                                    </button>
                                                 )}
+                                                <button onClick={() => handleEditPaymentClick(payment)} className="p-2 text-indigo-600 hover:text-indigo-700 rounded-full transition-colors duration-200">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                                    </svg>
+                                                </button>
+                                                <button onClick={() => handleDeletePaymentClick(payment)} className="p-2 text-red-600 hover:text-red-700 rounded-full transition-colors duration-200">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                    </svg>
+                                                </button>
                                             </div>
-                                            {payment.transactions.length > 0 && (
-                                                <div className="mt-4 border-t pt-4">
-                                                    <button onClick={() => toggleTransactions(payment.id)} className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
-                                                        {expandedPayments[payment.id] ? 'Hide Transactions' : 'View Transactions'} ({payment.transactions.length})
-                                                    </button>
-                                                    {expandedPayments[payment.id] && (
-                                                        <div className="mt-3 space-y-3">
-                                                            {payment.transactions.map(transaction => (
-                                                                <div key={transaction.id} className="bg-gray-50 p-4 rounded-lg border border-gray-100 shadow-sm">
-                                                                    <div className="flex justify-between items-center text-sm font-medium">
-                                                                        <p className="text-gray-900">Paid: <span className="font-bold">{transaction.paid_by_company}</span></p>
-                                                                        <p className="text-gray-500">{new Date(transaction.paid_on).toLocaleDateString()}</p>
-                                                                    </div>
-                                                                    {transaction.note && <p className="text-sm text-gray-600 mt-1">Note: {transaction.note}</p>}
-                                                                    {transaction.receipt_image && (
-                                                                        <a href={constructImageUrl(transaction.receipt_image)} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs hover:underline mt-2 inline-block">View Receipt</a>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
+                                        </div>
+                                        <div className="space-y-2 text-sm text-gray-700">
+                                            <p><strong>Quantity:</strong> {payment.total_quantity}</p>
+                                            <p><strong>Rate:</strong> {payment.rate_per_unit}</p>
+                                            <p><strong>Total Amount:</strong> <span className="font-semibold text-gray-900">{payment.total_amount}</span></p>
+                                            <p><strong>Remaining:</strong> <span className="font-semibold text-red-600">{payment.remaining_amount}</span></p>
+                                            {payment.note && <p className="break-words overflow-hidden" style={{ wordBreak: "break-word", whiteSpace: "pre-line", maxWidth: "100%" }}><strong>Note:</strong> {payment.note}</p>}
+                                            {payment.bill_image && (
+                                                <p><strong>Bill Image:</strong> <a href={constructImageUrl(payment.bill_image)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Bill</a></p>
                                             )}
                                         </div>
+                                        {payment.transactions.length > 0 && (
+                                            <div className="mt-4 border-t pt-4">
+                                                <button onClick={() => toggleTransactions(payment.id)} className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
+                                                    {expandedPayments[payment.id] ? 'Hide Transactions' : 'View Transactions'} ({payment.transactions.length})
+                                                </button>
+                                                {expandedPayments[payment.id] && (
+                                                    <div className="mt-3 space-y-3">
+                                                        {payment.transactions.map(transaction => (
+                                                            <div key={transaction.id} className="bg-gray-50 p-4 rounded-lg border border-gray-100 shadow-sm">
+                                                                <div className="flex justify-between items-center text-sm font-medium">
+                                                                    <p className="text-gray-900">Paid: <span className="font-bold">{transaction.paid_by_company}</span></p>
+                                                                    <p className="text-gray-500">{new Date(transaction.paid_on).toLocaleDateString()}</p>
+                                                                </div>
+                                                                {transaction.note && <p className="break-words overflow-hidden mt-1 text-sm text-gray-600" style={{ wordBreak: "break-word", whiteSpace: "pre-line", maxWidth: "100%" }}>Note: {transaction.note}</p>}
+                                                                {transaction.receipt_image && (
+                                                                    <a href={constructImageUrl(transaction.receipt_image)} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs hover:underline mt-2 inline-block">View Receipt</a>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            ))}
                         </div>
-                    ) : (
-                        <div className="flex justify-center items-center h-64 text-gray-500">
-                            No payments found for this supplier.
-                        </div>
-                    )
+                    </div>
+                ) : (
+                    <div className="flex justify-center items-center h-64 text-gray-500">
+                        No payments found for this supplier.
+                    </div>
                 )}
             </div>
         );
@@ -870,41 +759,32 @@ const Suppliers = ({ onBack }) => {
 
     return (
         <div className="p-8 bg-gray-100 text-gray-900 min-h-screen">
-            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+            <header className="flex justify-between items-center mb-8">
                 <button onClick={onBack} className="flex items-center text-gray-600 hover:text-gray-900 transition-colors duration-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span className="text-sm font-medium">Back</span>
+                    Back
                 </button>
-                {/* Heading: smaller, bolder, responsive */}
-                <h1 className="text-lg sm:text-xl font-semibold text-gray-900 tracking-wide text-left sm:text-center flex-1">
-                    Suppliers Management
-                </h1>
-                {/* Button: compact, professional, responsive */}
+              
                 <button
                     onClick={() => setShowCreateForm(true)}
-                    className="px-4 py-1.5 bg-blue-600 text-white font-medium rounded border border-blue-700 shadow-sm hover:bg-blue-700 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                    style={{ minWidth: 140 }}
+                    className="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg shadow hover:bg-blue-700 transition"
+                    style={{ minWidth: 160 }}
                 >
-                    + Add Supplier
+                    + Add New Supplier
                 </button>
             </header>
 
-            {/* Success and Error Messages */}
-            {createSuccess && <div className="p-4 mb-6 text-sm text-green-800 bg-green-100 rounded-lg shadow-md">Supplier created successfully!</div>}
             {createError && <div className="p-4 mb-6 text-sm text-red-800 bg-red-100 rounded-lg shadow-md">{createError}</div>}
-            {editSuccess && <div className="p-4 mb-6 text-sm text-green-800 bg-green-100 rounded-lg shadow-md">Supplier updated successfully!</div>}
             {editError && <div className="p-4 mb-6 text-sm text-red-800 bg-red-100 rounded-lg shadow-md">{editError}</div>}
-            {deleteSuccess && <div className="p-4 mb-6 text-sm text-green-800 bg-green-100 rounded-lg shadow-md">Supplier deleted successfully!</div>}
             {deleteError && <div className="p-4 mb-6 text-sm text-red-800 bg-red-100 rounded-lg shadow-md">{deleteError}</div>}
             {error && <div className="p-4 mb-6 text-sm text-red-800 bg-red-100 rounded-lg shadow-md">{error}</div>}
 
-            {/* Conditional Rendering of Forms */}
             {showCreateForm && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-70 flex justify-center items-center z-50 p-4">
                     <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-3xl overflow-y-auto max-h-[90vh] border border-gray-200">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Add New Supplier</h2>
+                        <h2 className="text-xl font-semibold text-gray-900 mb-6">Add New Supplier</h2>
                         <form onSubmit={handleCreateSupplierSubmit}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                 <input type="text" name="name" value={newSupplierData.name} onChange={handleNewSupplierInputChange} placeholder="Company Name" className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500" required />
@@ -932,7 +812,7 @@ const Suppliers = ({ onBack }) => {
             {showEditForm && currentSupplierToEdit && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-70 flex justify-center items-center z-50 p-4">
                     <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-3xl overflow-y-auto max-h-[90vh] border border-gray-200">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Supplier</h2>
+                        <h2 className="text-xl font-semibold text-gray-900 mb-6">Edit Supplier</h2>
                         <form onSubmit={handleUpdateSupplierSubmit}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                 <input type="text" name="name" value={currentSupplierToEdit.name} onChange={handleEditSupplierInputChange} placeholder="Company Name" className="bg-gray-200 text-gray-900 border-gray-300 border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500" required />
@@ -968,7 +848,7 @@ const Suppliers = ({ onBack }) => {
             {showDeleteModal && supplierToDelete && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-70 flex justify-center items-center z-50 p-4">
                     <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Confirm Deletion</h2>
+                        <h2 className="text-xl font-semibold text-gray-900 mb-4">Confirm Deletion</h2>
                         <p className="mb-6 text-gray-700">Are you sure you want to delete the supplier <span className="font-semibold text-gray-900">**{supplierToDelete.name}**</span>?</p>
                         <div className="flex justify-end space-x-4">
                             <button onClick={() => setShowDeleteModal(false)} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md shadow-md hover:bg-gray-300 transition-colors duration-300">Cancel</button>
@@ -982,7 +862,7 @@ const Suppliers = ({ onBack }) => {
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-70 flex justify-center items-center z-50 p-4">
                     <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900">Supplier Details</h2>
+                            <h2 className="text-xl font-semibold text-gray-900">Supplier Details</h2>
                             <button onClick={() => setShowDetailsModal(false)} className="text-gray-600 hover:text-gray-900 transition-colors duration-300">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -999,7 +879,7 @@ const Suppliers = ({ onBack }) => {
                                     </svg>
                                 </div>
                             )}
-                            <h3 className="text-xl font-bold text-gray-900">{supplierToView.name}</h3>
+                            <h3 className="text-lg font-semibold text-gray-900">{supplierToView.name}</h3>
                         </div>
                         <div className="space-y-3 text-gray-700">
                             <p><strong>Contact:</strong> {supplierToView.contact_number}</p>
@@ -1017,14 +897,11 @@ const Suppliers = ({ onBack }) => {
                 </div>
             )}
 
-
-            {/* Suppliers List */}
             {isLoading ? (
                 <div className="flex justify-center items-center h-64">
                     <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
                 </div>
             ) : suppliers.length > 0 ? (
-                /* This div is the container for the table and allows horizontal scrolling on small screens. */
                 <div className="bg-white shadow-xl rounded-2xl overflow-hidden overflow-x-auto border border-gray-200">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-200">
