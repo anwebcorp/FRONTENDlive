@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "./axiosInstance";
@@ -17,15 +18,7 @@ export default function Login({ setUser }) {
     setError(null);
 
     try {
-      const response = await axiosInstance.post('login/', 
-        { username, password },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          withCredentials: false // Explicitly set for login request
-        }
-      );
+      const response = await axiosInstance.post('login/', { username, password });
 
       console.log("Full API response:", response.data);
 
@@ -79,31 +72,11 @@ export default function Login({ setUser }) {
 
 
       if (userProfile && userProfile.id && tokens?.access && tokens?.refresh) {
-        setUser(userProfile);
-        
-        // Store in both localStorage and sessionStorage for mobile compatibility
-        try {
-          localStorage.setItem('access_token', tokens.access);
-          localStorage.setItem('refreshToken', tokens.refresh);
-          localStorage.setItem('user', JSON.stringify(userProfile));
-          
-          // Backup storage for mobile browsers
-          sessionStorage.setItem('access_token', tokens.access);
-          sessionStorage.setItem('refreshToken', tokens.refresh);
-          sessionStorage.setItem('user', JSON.stringify(userProfile));
-          
-          if (isUserAdminFromBackend) {
-            localStorage.setItem('adminData', JSON.stringify(response.data.data));
-            sessionStorage.setItem('adminData', JSON.stringify(response.data.data));
-          }
-        } catch (storageError) {
-          console.error('Storage error:', storageError);
-          // If localStorage fails, try sessionStorage only
-          sessionStorage.setItem('access_token', tokens.access);
-          sessionStorage.setItem('refreshToken', tokens.refresh);
-          sessionStorage.setItem('user', JSON.stringify(userProfile));
-        }
 
+        setUser(userProfile);
+        localStorage.setItem('access_token', tokens.access);
+        localStorage.setItem('refreshToken', tokens.refresh);
+        localStorage.setItem('user', JSON.stringify(userProfile));
         // Update AuthContext
         setAuth({
           user: userProfile,
@@ -131,8 +104,6 @@ export default function Login({ setUser }) {
       console.error("Login failed:", err);
       if (err.response && err.response.data && err.response.data.msg) {
         setError(err.response.data.msg);
-      } else if (err.message === 'Network Error') {
-        setError("Network error. Please check your internet connection.");
       } else {
         setError("Login failed. Please check your credentials.");
       }

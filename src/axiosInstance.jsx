@@ -1,90 +1,62 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'https://employeemanagement.company/api/',
-  withCredentials: false, // Changed to false
-  headers: {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-  }
+  baseURL: 'https://employeemanagement.company/api/', // Updated API base URL
 });
 
-// Helper function to get token from available storage
-const getToken = (key) => {
-  try {
-    return localStorage.getItem(key) || sessionStorage.getItem(key) || null;
-  } catch (error) {
-    console.error('Storage access error:', error);
-    return sessionStorage.getItem(key) || null;
-  }
-};
-
-// Request interceptor
+// Request interceptor to attach access token to headers
 axiosInstance.interceptors.request.use(
   (config) => {
-    const accessToken = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-    
-    // Add CORS headers
-    config.headers = {
-      ...config.headers,
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
-    };
-
+    // CORRECTED: Changed 'accessToken' to 'access_token'
+    const accessToken = localStorage.getItem('access_token');
     if (accessToken) {
       config.headers['Authorization'] = `Bearer ${accessToken}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
-// Response interceptor
+// Response interceptor to handle token refresh on 401
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
+
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        // No refresh token, redirect to login
+        localStorage.removeItem('access_token');
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
       try {
-        const refreshToken = getToken('refreshToken');
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
-        }
-
-        const response = await axios.post(
-          'https://employeemanagement.company/api/token/refresh/',
-          { refresh: refreshToken },
-          { withCredentials: true }
-        );
-
-        if (response.data?.access) {
-          // Store new token in both storage types
-          try {
-            localStorage.setItem('access_token', response.data.access);
-          } catch (e) {
-            console.error('localStorage error:', e);
-          }
-          sessionStorage.setItem('access_token', response.data.access);
-
-          originalRequest.headers['Authorization'] = `Bearer ${response.data.access}`;
+        const response = await axios.post('https://employeemanagement.company/api/token/refresh/', { refresh: refreshToken });
+        const { access } = response.data;
+        if (access) {
+          // CORRECTED: Use 'access_token' to store the new token
+          localStorage.setItem('access_token', access);
+          originalRequest.headers['Authorization'] = `Bearer ${access}`;
           return axiosInstance(originalRequest);
+        } else {
+          throw new Error('No access token in refresh response');
         }
-        throw new Error('No access token in refresh response');
       } catch (refreshError) {
-        // Clear both storage types
-        try {
-          localStorage.clear();
-        } catch (e) {
-          console.error('localStorage clear error:', e);
-        }
-        sessionStorage.clear();
+        // Refresh token invalid or expired: clear storage and redirect to login
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refreshToken');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
     }
+
     return Promise.reject(error);
   }
 );
