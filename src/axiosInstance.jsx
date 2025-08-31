@@ -1,62 +1,78 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'https://employeemanagement.company/api/', // Updated API base URL
+  baseURL: 'https://employeemanagement.company/api/',
+  withCredentials: true, // Enable credentials
 });
 
-// Request interceptor to attach access token to headers
+// Helper function to get token from available storage
+const getToken = (key) => {
+  try {
+    return localStorage.getItem(key) || sessionStorage.getItem(key) || null;
+  } catch (error) {
+    console.error('Storage access error:', error);
+    return sessionStorage.getItem(key) || null;
+  }
+};
+
+// Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
-    // CORRECTED: Changed 'accessToken' to 'access_token'
-    const accessToken = localStorage.getItem('access_token');
+    const accessToken = getToken('access_token');
     if (accessToken) {
       config.headers['Authorization'] = `Bearer ${accessToken}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle token refresh on 401
+// Response interceptor
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
-        // No refresh token, redirect to login
-        localStorage.removeItem('access_token');
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
-
       try {
-        const response = await axios.post('https://employeemanagement.company/api/token/refresh/', { refresh: refreshToken });
-        const { access } = response.data;
-        if (access) {
-          // CORRECTED: Use 'access_token' to store the new token
-          localStorage.setItem('access_token', access);
-          originalRequest.headers['Authorization'] = `Bearer ${access}`;
-          return axiosInstance(originalRequest);
-        } else {
-          throw new Error('No access token in refresh response');
+        const refreshToken = getToken('refreshToken');
+        if (!refreshToken) {
+          throw new Error('No refresh token available');
         }
+
+        const response = await axios.post(
+          'https://employeemanagement.company/api/token/refresh/',
+          { refresh: refreshToken },
+          { withCredentials: true }
+        );
+
+        if (response.data?.access) {
+          // Store new token in both storage types
+          try {
+            localStorage.setItem('access_token', response.data.access);
+          } catch (e) {
+            console.error('localStorage error:', e);
+          }
+          sessionStorage.setItem('access_token', response.data.access);
+
+          originalRequest.headers['Authorization'] = `Bearer ${response.data.access}`;
+          return axiosInstance(originalRequest);
+        }
+        throw new Error('No access token in refresh response');
       } catch (refreshError) {
-        // Refresh token invalid or expired: clear storage and redirect to login
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refreshToken');
+        // Clear both storage types
+        try {
+          localStorage.clear();
+        } catch (e) {
+          console.error('localStorage clear error:', e);
+        }
+        sessionStorage.clear();
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
     }
-
     return Promise.reject(error);
   }
 );

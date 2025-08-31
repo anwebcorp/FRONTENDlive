@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "./axiosInstance";
@@ -72,11 +71,31 @@ export default function Login({ setUser }) {
 
 
       if (userProfile && userProfile.id && tokens?.access && tokens?.refresh) {
-
         setUser(userProfile);
-        localStorage.setItem('access_token', tokens.access);
-        localStorage.setItem('refreshToken', tokens.refresh);
-        localStorage.setItem('user', JSON.stringify(userProfile));
+        
+        // Store in both localStorage and sessionStorage for mobile compatibility
+        try {
+          localStorage.setItem('access_token', tokens.access);
+          localStorage.setItem('refreshToken', tokens.refresh);
+          localStorage.setItem('user', JSON.stringify(userProfile));
+          
+          // Backup storage for mobile browsers
+          sessionStorage.setItem('access_token', tokens.access);
+          sessionStorage.setItem('refreshToken', tokens.refresh);
+          sessionStorage.setItem('user', JSON.stringify(userProfile));
+          
+          if (isUserAdminFromBackend) {
+            localStorage.setItem('adminData', JSON.stringify(response.data.data));
+            sessionStorage.setItem('adminData', JSON.stringify(response.data.data));
+          }
+        } catch (storageError) {
+          console.error('Storage error:', storageError);
+          // If localStorage fails, try sessionStorage only
+          sessionStorage.setItem('access_token', tokens.access);
+          sessionStorage.setItem('refreshToken', tokens.refresh);
+          sessionStorage.setItem('user', JSON.stringify(userProfile));
+        }
+
         // Update AuthContext
         setAuth({
           user: userProfile,
