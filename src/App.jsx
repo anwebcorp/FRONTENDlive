@@ -9,6 +9,7 @@ import SupplierDetails from "./SupplierDetails";
 import Suppliers from "./Suppliers"; // Make sure to import Suppliers
 import PrivateRoute from "./PrivateRoute";
 import { AuthProvider } from "./authContext";
+import Accounts from "./Accounts"; // Add this import
 
 function App() {
   // ⭐ UPDATED: Initialize user to `undefined` to represent the 'loading' state
@@ -101,6 +102,15 @@ function App() {
             element={
               <PrivateRoute allowedId={20} user={user}>
                 <SupplierDetails user={user} setUser={setUser} />
+              </PrivateRoute>
+            }
+          />
+          {/* Add the new Accounts route before the catch-all route */}
+          <Route
+            path="/accounts"
+            element={
+              <PrivateRoute allowedId={18} user={user}>
+                <Accounts user={user} setUser={setUser} />
               </PrivateRoute>
             }
           />

@@ -470,25 +470,16 @@ export default function Admin({ user, setUser }) {
         );
     };
 
-    const EmployeeDetailView = ({ employee, onBack, isVisible, onManageDocuments, onDetailClick, onManagePayment, onManageAttendance }) => {
+    const EmployeeDetailView = ({ employee, onBack, isVisible, onManageDocuments, onDetailClick, onManagePayment, onManageAttendance, setCurrentEmployeeToEdit, setShowEditForm }) => {
         if (!employee) {
             return null;
         }
 
-        const clickableFields = [
-            'name', 'cnic', 'phone_number', 'address', 'Job_title',
-            'employee_id', 'joining_date', 'username', 'email', 'first_name', 'last_name'
-        ];
-
-        const displayData = Object.entries(employee).filter(([key]) =>
-            !['user', 'id', 'photo', 'time_since_joining'].includes(key) && clickableFields.includes(key)
-        );
-
         return (
             <div
                 className={`fixed inset-0 bg-neutral-50 z-20 flex flex-col font-sans
-                                transition-transform duration-300 ease-out
-                                ${isVisible ? 'translate-x-0' : 'translate-x-full'}`}
+                            transition-transform duration-300 ease-out
+                            ${isVisible ? 'translate-x-0' : 'translate-x-full'}`}
             >
                 <div className="bg-white border-b border-neutral-200 py-3 px-4 shadow-sm relative z-10 flex items-center justify-start">
                     <button
@@ -517,76 +508,88 @@ export default function Admin({ user, setUser }) {
                             </div>
                             <div className="text-center">
                                 <h2 className="text-2xl font-bold text-neutral-900 mb-1">{employee.name}</h2>
-                                <p className="text-neutral-600 text-sm">ID: {employee.employee_id}</p>
+                                <p className="text-base py-2 text-neutral-500">
+                                    ID: {employee.employee_id}
+                                </p>
                             </div>
                         </div>
                     </div>
 
                     <div className="mx-4 mb-5 rounded-xl overflow-hidden shadow-sm">
-                        <ul className="bg-white divide-y divide-neutral-200">
-                            {displayData.map(([key, value]) => {
-                                if (key === 'employee_id') return null;
-
-                                const displayLabel = key.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-                                return (
-                                    <li key={key}>
-                                        <button
-                                            onClick={() => onDetailClick(employee, key)}
-                                            className="w-full flex justify-between items-center py-3 px-4 text-blue-600 font-normal text-lg hover:bg-neutral-100 active:bg-neutral-200 transition-colors duration-100 ease-in-out"
-                                        >
-                                            <span className="text-neutral-800 font-medium capitalize">
-                                                {displayLabel}
-                                            </span>
-                                            <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                                            </svg>
-                                        </button>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                        <div className="bg-white p-6 space-y-4">
+                            <div>
+                                <h3 className="text-sm font-semibold text-neutral-500">CNIC</h3>
+                                <p className="text-neutral-900">{employee.cnic}</p>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-neutral-500">Phone Number</h3>
+                                <p className="text-neutral-900">{employee.phone_number}</p>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-neutral-500">Address</h3>
+                                <p className="text-neutral-900">{employee.address}</p>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-neutral-500">Job Title</h3>
+                                <p className="text-neutral-900">{employee.Job_title}</p>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-neutral-500">Email</h3>
+                                <p className="text-neutral-900">{employee.email}</p>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-neutral-500">Username</h3>
+                                <p className="text-neutral-900">{employee.username}</p>
+                            </div>
+                            <button
+                                onClick={() => onDetailClick(employee, 'joining_date')}
+                                className="w-full flex justify-between items-center py-3 px-4 text-blue-600 font-normal text-lg hover:bg-neutral-100 active:bg-neutral-200 transition-colors duration-100 ease-in-out rounded-lg"
+                            >
+                                <span className="text-neutral-800 font-medium">Joining Date</span>
+                                <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <div className="mx-4 mt-5 rounded-xl overflow-hidden shadow-sm">
                         <ul className="bg-white divide-y divide-neutral-200">
                             <li>
                                 <button
-                                    onClick={() => {
-                                        setCurrentEmployeeToEdit({
-                                            ...employee,
-                                            image: null,
-                                        });
-                                        setShowEditForm(true);
-                                        setSelectedEmployee(null);
-                                    }}
-                                    className="w-full py-3 text-blue-600 font-normal text-lg hover:bg-neutral-100 active:bg-neutral-200 transition-colors duration-100 ease-in-out"
-                                >
-                                    Edit Employee
-                                </button>
-                            </li>
-                            <li>
-                                <button
                                     onClick={() => onManageDocuments(employee)}
                                     className="w-full py-3 text-blue-600 font-normal text-lg hover:bg-neutral-100 active:bg-neutral-200 transition-colors duration-100 ease-in-out"
-                                >
-                                    Manage Documents
-                                </button>
+                            >
+                                Manage Documents
+                            </button>
                             </li>
                             <li>
                                 <button
                                     onClick={() => onManageAttendance(employee)}
                                     className="w-full py-3 text-blue-600 font-normal text-lg hover:bg-neutral-100 active:bg-neutral-200 transition-colors duration-100 ease-in-out"
-                                >
-                                    Attendance
-                                </button>
+                            >
+                                Attendance
+                            </button>
                             </li>
                             <li>
                                 <button
                                     onClick={() => onManagePayment(employee)}
                                     className="w-full py-3 text-blue-600 font-normal text-lg hover:bg-neutral-100 active:bg-neutral-200 transition-colors duration-100 ease-in-out"
-                                >
-                                    Payment
-                                </button>
+                            >
+                                Payment
+                            </button>
+                            </li>
+                            {/* Add the Edit Employee button */}
+                            <li>
+                                <button
+                                    onClick={() => {
+                                        setCurrentEmployeeToEdit(employee);
+                                        setShowEditForm(true);
+                                    }}
+                                    className="w-full py-3 text-blue-600 font-normal text-lg hover:bg-neutral-100 active:bg-neutral-200 transition-colors duration-100 ease-in-out"
+                            >
+                                Edit Employee
+                            </button>
                             </li>
                         </ul>
                     </div>
@@ -658,6 +661,17 @@ export default function Admin({ user, setUser }) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2H7a2 2 0 00-2 2v2m7-9v2"></path>
                             </svg>
                             Manage Suppliers
+                        </button>
+
+                        {/* ⭐ NEW: Accounts button */}
+                        <button
+                            onClick={() => navigate('/accounts')}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center transition-transform duration-200 ease-in-out active:scale-[0.98] shadow-md hover:shadow-lg"
+                        >
+                            <svg className="w-6 h-6 mr-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Accounts
                         </button>
 
                         {/* ⭐ MOVED: Logout button */}
@@ -739,7 +753,9 @@ export default function Admin({ user, setUser }) {
                 onManageDocuments={handleManageDocumentsClick}
                 onDetailClick={handleDetailClick}
                 onManagePayment={handleManagePaymentClick}
-                onManageAttendance={handleManageAttendanceClick} // Pass the new handler
+                onManageAttendance={handleManageAttendanceClick}
+                setCurrentEmployeeToEdit={setCurrentEmployeeToEdit} // Add this prop
+                setShowEditForm={setShowEditForm} // Add this prop
             />
 
             <div

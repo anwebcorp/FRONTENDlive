@@ -28,8 +28,8 @@ export default function PrivateRoute({ children, allowedId, user }) {
   const isRouteForSupplier = allowedId === 20;
   const isRouteForEmployee = allowedId === 0;
 
-  // Rule 1: Allow Admin to access any route
-  if (isUserActuallyAdmin) {
+  // Allow Admin to access any admin route or any other route
+  if (isUserActuallyAdmin && (isRouteForAdmin || allowedId === 18)) {
     return children;
   }
   
