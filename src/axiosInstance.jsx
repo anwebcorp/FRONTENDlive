@@ -2,7 +2,11 @@ import axios from 'axios';
 
 const axiosInstance = axios.create({
   baseURL: 'https://employeemanagement.company/api/',
-  withCredentials: true, // Enable credentials
+  withCredentials: false, // Changed to false
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  }
 });
 
 // Helper function to get token from available storage
@@ -18,7 +22,15 @@ const getToken = (key) => {
 // Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
-    const accessToken = getToken('access_token');
+    const accessToken = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+    
+    // Add CORS headers
+    config.headers = {
+      ...config.headers,
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
+    };
+
     if (accessToken) {
       config.headers['Authorization'] = `Bearer ${accessToken}`;
     }

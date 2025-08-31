@@ -17,7 +17,15 @@ export default function Login({ setUser }) {
     setError(null);
 
     try {
-      const response = await axiosInstance.post('login/', { username, password });
+      const response = await axiosInstance.post('login/', 
+        { username, password },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          withCredentials: false // Explicitly set for login request
+        }
+      );
 
       console.log("Full API response:", response.data);
 
@@ -123,6 +131,8 @@ export default function Login({ setUser }) {
       console.error("Login failed:", err);
       if (err.response && err.response.data && err.response.data.msg) {
         setError(err.response.data.msg);
+      } else if (err.message === 'Network Error') {
+        setError("Network error. Please check your internet connection.");
       } else {
         setError("Login failed. Please check your credentials.");
       }
