@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "./axiosInstance";
@@ -71,16 +72,11 @@ export default function Login({ setUser }) {
 
 
       if (userProfile && userProfile.id && tokens?.access && tokens?.refresh) {
+
         setUser(userProfile);
-        
-        // Store in both localStorage and sessionStorage for better mobile compatibility
         localStorage.setItem('access_token', tokens.access);
-        sessionStorage.setItem('access_token', tokens.access);
         localStorage.setItem('refreshToken', tokens.refresh);
-        sessionStorage.setItem('refreshToken', tokens.refresh);
         localStorage.setItem('user', JSON.stringify(userProfile));
-        sessionStorage.setItem('user', JSON.stringify(userProfile));
-        
         // Update AuthContext
         setAuth({
           user: userProfile,
