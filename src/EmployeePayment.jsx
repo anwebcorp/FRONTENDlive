@@ -87,6 +87,14 @@ export default function EmployeePayment({ employeeId, employeeName, onBack }) {
         };
     }, [selectedPayslip, employeeName]);
 
+    // Helper function to format numbers without .00
+    const formatNumber = (num) => {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }).format(num);
+    };
+
     // Handler to show detail view for a specific payslip
     const handleViewPayslipDetail = (payslip) => {
         setSelectedPayslip(payslip);
@@ -156,7 +164,7 @@ export default function EmployeePayment({ employeeId, employeeName, onBack }) {
                                     <div className="flex justify-between items-center">
                                         <div>
                                             <p className="text-lg font-semibold text-neutral-800">{payslip.month}</p>
-                                            <p className="text-sm text-neutral-500">Net Pay: Rs {Number(payslip.net_pay || 0).toFixed(2)}</p>
+                                            <p className="text-sm text-neutral-500">Net Pay: Rs {formatNumber(Number(payslip.net_pay || 0))}</p>
                                         </div>
                                         <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
                                             payslip.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -207,7 +215,7 @@ export default function EmployeePayment({ employeeId, employeeName, onBack }) {
                                     {/* Net Salary - Prominent Display */}
                                     <div className="mt-4 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-md">
                                         <p className="text-sm uppercase opacity-90">Total Net Pay</p>
-                                        <p className="text-3xl font-extrabold">Rs {employeeSummary.netSalary.toFixed(2)}</p>
+                                        <p className="text-3xl font-extrabold">Rs {formatNumber(employeeSummary.netSalary)}</p>
                                     </div>
                                     <p className={`text-md font-semibold mt-4 ${employeeSummary.status === 'Paid' ? 'text-green-600' : 'text-red-600'}`}>
                                         Status: {employeeSummary.status}
@@ -221,7 +229,7 @@ export default function EmployeePayment({ employeeId, employeeName, onBack }) {
                                         <div>
                                             <label className="block text-sm font-medium text-neutral-700 mb-1">Basic Salary</label>
                                             <p className="w-full px-4 py-2 border rounded-lg bg-neutral-100 border-neutral-200 text-neutral-800">
-                                                Rs {employeeSummary.basicSalary.toFixed(2)}
+                                                Rs {formatNumber(employeeSummary.basicSalary)}
                                             </p>
                                         </div>
                                     </div>
@@ -236,7 +244,7 @@ export default function EmployeePayment({ employeeId, employeeName, onBack }) {
                                                 <div>
                                                     <label className="block text-sm font-medium text-neutral-700 mb-1">Leave Deduction</label>
                                                     <p className="w-full px-4 py-2 border rounded-lg bg-red-50 border-red-200 text-red-800 font-medium">
-                                                        - Rs {employeeSummary.leaveDeduction.toFixed(2)}
+                                                        - Rs {formatNumber(employeeSummary.leaveDeduction)}
                                                     </p>
                                                 </div>
                                                 <div>
@@ -252,7 +260,7 @@ export default function EmployeePayment({ employeeId, employeeName, onBack }) {
                                                 <div>
                                                     <label className="block text-sm font-medium text-neutral-700 mb-1">Equipment Recovery</label>
                                                     <p className="w-full px-4 py-2 border rounded-lg bg-red-50 border-red-200 text-red-800 font-medium">
-                                                        - Rs {employeeSummary.equipmentRecovery.toFixed(2)}
+                                                        - Rs {formatNumber(employeeSummary.equipmentRecovery)}
                                                     </p>
                                                 </div>
                                                 <div>
@@ -268,7 +276,7 @@ export default function EmployeePayment({ employeeId, employeeName, onBack }) {
                                                 <div>
                                                     <label className="block text-sm font-medium text-neutral-700 mb-1">Loan Deduction</label>
                                                     <p className="w-full px-4 py-2 border rounded-lg bg-red-50 border-red-200 text-red-800 font-medium">
-                                                        - Rs {employeeSummary.loanDeduction.toFixed(2)}
+                                                        - Rs {formatNumber(employeeSummary.loanDeduction)}
                                                     </p>
                                                 </div>
                                                 <div>
@@ -284,7 +292,7 @@ export default function EmployeePayment({ employeeId, employeeName, onBack }) {
                                         <div className="mt-4 pt-4 border-t border-neutral-200">
                                             <p className="text-lg font-semibold text-neutral-800 flex justify-between">
                                                 <span>Total Deductions:</span>
-                                                <span className="text-red-700">- Rs {employeeSummary.totalDeductions.toFixed(2)}</span>
+                                                <span className="text-red-700">- Rs {formatNumber(employeeSummary.totalDeductions)}</span>
                                             </p>
                                         </div>
                                     )}
@@ -300,7 +308,7 @@ export default function EmployeePayment({ employeeId, employeeName, onBack }) {
                                                     <div>
                                                         <label className="block text-sm font-medium text-neutral-700 mb-1">Amount</label>
                                                         <p className="w-full px-4 py-2 border rounded-lg bg-neutral-100 border-neutral-200 text-neutral-800">
-                                                            Rs {Number(advance.amount || 0).toFixed(2)}
+                                                            Rs {formatNumber(Number(advance.amount || 0))}
                                                         </p>
                                                     </div>
                                                     <div>

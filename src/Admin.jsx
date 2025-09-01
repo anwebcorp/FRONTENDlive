@@ -541,15 +541,15 @@ export default function Admin({ user, setUser }) {
                                 <h3 className="text-sm font-semibold text-neutral-500">Username</h3>
                                 <p className="text-neutral-900">{employee.username}</p>
                             </div>
-                            <button
-                                onClick={() => onDetailClick(employee, 'joining_date')}
-                                className="w-full flex justify-between items-center py-3 px-4 text-blue-600 font-normal text-lg hover:bg-neutral-100 active:bg-neutral-200 transition-colors duration-100 ease-in-out rounded-lg"
-                            >
-                                <span className="text-neutral-800 font-medium">Joining Date</span>
-                                <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                                </svg>
-                            </button>
+                            <div>
+                                <h3 className="text-sm font-semibold text-neutral-500">Joining Date</h3>
+                                <div className="text-neutral-900">
+                                    {employee.joining_date}
+                                    <div className="text-sm text-neutral-600 mt-1">
+                                        <span className="font-medium text-neutral-700">Time since joining:</span> {employee.time_since_joining}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

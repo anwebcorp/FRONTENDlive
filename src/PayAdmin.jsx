@@ -365,6 +365,13 @@ export default function PayAdmin({ employeeId, employeeName, onBack, onPayslipUp
         }
     };
 
+    // Helper function to format numbers without .00
+    const formatNumber = (num) => {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }).format(num);
+    };
 
     if (loading) {
         return (
@@ -423,7 +430,7 @@ export default function PayAdmin({ employeeId, employeeName, onBack, onPayslipUp
                                 {/* Net Salary - Prominent Display */}
                                 <div className="mt-4 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-md">
                                     <p className="text-sm uppercase opacity-90">Total Salary</p>
-                                    <p className="text-3xl font-extrabold">Rs {employeeSummary.netSalary.toFixed(2)}</p>
+                                    <p className="text-3xl font-extrabold">Rs {formatNumber(employeeSummary.netSalary)}</p>
                                 </div>
                                 {selectedPayslip && (
                                     <p className={`text-md font-semibold mt-4 ${employeeSummary.status === 'Paid' ? 'text-green-600' : 'text-red-600'}`}>
@@ -563,8 +570,8 @@ export default function PayAdmin({ employeeId, employeeName, onBack, onPayslipUp
                                 <div className="bg-white rounded-xl shadow-md p-6">
                                     <h3 className="text-lg font-semibold text-neutral-800 mb-4">Deductions Summary</h3>
                                     <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-md">
-                                        <p><span className="font-medium">Basic Salary:</span> Rs {employeeSummary.basicSalary.toFixed(2)}</p>
-                                        <p><span className="font-medium">Total Deductions:</span> -Rs {employeeSummary.totalDeductions.toFixed(2)}</p>
+                                        <p><span className="font-medium">Basic Salary:</span> Rs {formatNumber(employeeSummary.basicSalary)}</p>
+                                        <p><span className="font-medium">Total Deductions:</span> -Rs {formatNumber(employeeSummary.totalDeductions)}</p>
                                     </div>
                                 </div>
 
@@ -651,6 +658,11 @@ export default function PayAdmin({ employeeId, employeeName, onBack, onPayslipUp
                                             <div>
                                                 <p className="text-neutral-900 font-medium">{payslip.month}</p>
 
+                                            </div>
+                                            <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                                payslip.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                            }`}>
+                                                {payslip.status}
                                             </div>
                                             <button
                                                 onClick={() => handleViewMonth(payslip)}
