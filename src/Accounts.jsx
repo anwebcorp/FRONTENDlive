@@ -7,7 +7,8 @@ const cardShadow = "shadow-2xl";
 const cardRounded = "rounded-2xl";
 const cardBg = "bg-white/80 backdrop-blur-md ring-1 ring-inset ring-slate-100";
 const cardBorder = "border border-slate-200";
-const mainTitle = "text-3xl font-black text-slate-900 tracking-tight";
+const mainTitle = "text-2xl font-black text-blue-900 tracking-tight";
+//const mainTitle = "text-3xl font-black text-slate-900 tracking-tight";
 const secTitle = "text-xl font-bold text-indigo-700";
 const btn = "focus:outline-none transition-all duration-150 ease-in-out";
 const btnAccent = `${btn} bg-gradient-to-r from-indigo-600 to-sky-500 hover:from-indigo-700 hover:to-sky-600 text-white font-semibold rounded-xl px-6 py-2 shadow-lg ring-1 ring-indigo-300/50 hover:ring-2 hover:ring-indigo-400/60`;
@@ -16,7 +17,8 @@ const btnSm = "text-xs px-3 py-1 rounded-lg";
 const btnDanger = `${btn} bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-bold rounded-lg px-5 py-1.5 shadow ring-1 ring-rose-200/50 hover:ring-rose-400/70`;
 const input = "w-full px-4 py-2 border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl bg-slate-50 shadow-inner transition placeholder:text-slate-400";
 const modalBg = "fixed inset-0 bg-gradient-to-br from-indigo-800/60 to-sky-400/25 flex items-center justify-center z-50 backdrop-blur-sm";
-const modalCard = "bg-white/90 rounded-3xl shadow-2xl w-full max-w-lg p-9 relative border-2 border-indigo-100 ring-2 ring-indigo-200/20";
+const modalCard = "bg-white/90 rounded-3xl shadow-2xl w-full max-w-sm sm:max-w-md p-6 sm:p-9 relative border-2 border-indigo-100 ring-2 ring-indigo-200/20";
+//const modalCard = "bg-white/90 rounded-3xl shadow-2xl w-full max-w-lg p-9 relative border-2 border-indigo-100 ring-2 ring-indigo-200/20";
 const label = "block text-sm font-semibold text-slate-900 mb-1";
 const errorBox = "bg-rose-50 border-l-4 border-rose-400 text-rose-800 px-4 py-2 rounded-lg mb-4 font-medium shadow";
 const infoBox = "bg-sky-50 border-l-4 border-sky-400 text-sky-800 px-4 py-2 rounded-lg mb-4 font-medium shadow";
@@ -795,7 +797,6 @@ export default function Accounts({ user }) {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
                                 </svg> Back
                             </button>
-                            <h1 className={mainTitle}>Manage Sheets</h1>
                             <button onClick={openCreateSheet} className={`${btnAccent}`}>
                                 <i className="fa fa-plus mr-1"></i> New Sheet
                             </button>
@@ -1033,8 +1034,9 @@ export default function Accounts({ user }) {
                         <ModalFooter onCancel={closeDeleteSubHead} onDelete={handleDeleteSubHead} deleteLabel="Delete" />
                     </Modal>
                 )}
+                {/* key="create-item-modal" */}
                 {showCreateItem && (
-                    <Modal onClose={closeCreateItem} key="create-item-modal">
+                    <Modal onClose={closeCreateItem} >
                         <h3 className={secTitle + " mb-4"}>Add Expense Item</h3>
                         {itemError && <div className={errorBox}>{itemError}</div>}
                         <form onSubmit={handleCreateItem}>
