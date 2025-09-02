@@ -60,12 +60,18 @@ function ModalFooter({ onCancel, onDelete, deleteLabel = "Delete", onPrimary, pr
 }
 
 const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
+    if (amount == null) return '';
+    const num = Number(amount);
+    // Use PKR as the currency code
+    let formatted = num.toLocaleString('en-PK', {
         style: 'currency',
-        currency: 'INR',
-        minimumFractionDigits: 2,
+        currency: 'PKR',
+        minimumFractionDigits: 0,
         maximumFractionDigits: 2,
-    }).format(amount);
+    }).replace(/\.00$/, '');
+    // Optional: Replace "PKR" with symbol ₨ for better appearance
+    formatted = formatted.replace('PKR', '₨');
+    return formatted;
 };
 function getBackendError(err, defaultMsg) {
     if (err.response && err.response.data) {
@@ -84,6 +90,131 @@ function getBackendError(err, defaultMsg) {
     return defaultMsg;
 }
 
+function MainHeadExpensesView({ mainHead, onClose, openEditExpenseItem, openDeleteExpenseItem, openImageModal, openCreateSubHead, openEditSubHead, openDeleteSubHead, expenseHeads, openCreateSubHeadFromItem }) {
+    const [subHeadFilter, setSubHeadFilter] = useState(null);
+    const [page, setPage] = useState(1);
+    const expensesPerPage = 5;
+
+    const allExpenses = mainHead.sub_heads_in_head.flatMap(sub =>
+        sub.items.map(item => ({ ...item, sub }))
+    );
+
+    const filteredExpenses = subHeadFilter
+        ? allExpenses.filter(item => item.sub.id === subHeadFilter)
+        : allExpenses;
+
+    filteredExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const totalPages = Math.ceil(filteredExpenses.length / expensesPerPage);
+    const displayedExpenses = filteredExpenses.slice((page - 1) * expensesPerPage, page * expensesPerPage);
+
+    return (
+        <div>
+            <div className="flex items-center mb-6 md:mb-10">
+                <button onClick={onClose} className="text-indigo-700 font-semibold flex items-center text-base md:text-lg">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+                    </svg> Back to Sheets
+                </button>
+                <h1 className={mainTitle + " ml-auto"}>{mainHead.name} Expenses</h1>
+            </div>
+
+            <div className={`${cardBg} ${cardShadow} ${cardRounded} ${cardBorder} p-7 mb-10`}>
+                <div className="text-base text-indigo-700 mb-2 font-bold">
+                    Total: <span className="text-emerald-700">{formatCurrency(mainHead.total_expense)}</span>
+                </div>
+
+                <div className="font-bold text-indigo-800 mt-2 mb-2">Filter by Sub-Category:</div>
+                <div className="flex flex-wrap gap-2 mb-4">
+                    <button
+                        onClick={() => { setSubHeadFilter(null); setPage(1); }}
+                        className={`${btnOutline} ${btnSm} ${subHeadFilter === null ? 'bg-indigo-200' : ''}`}
+                    >
+                        All
+                    </button>
+                    {(mainHead.sub_heads_in_head || []).map(subHead => (
+                        <button
+                            key={subHead.id}
+                            onClick={() => { setSubHeadFilter(subHead.id); setPage(1); }}
+                            className={`${btnOutline} ${btnSm} ${subHeadFilter === subHead.id ? 'bg-indigo-200' : ''}`}
+                        >
+                            {subHead.name}
+                        </button>
+                    ))}
+                    <button onClick={() => openCreateSubHead(mainHead.monthly_sheet, mainHead.id)} className={`${btnOutline} ${btnSm} mt-2 text-xs`}>
+                        <i className="fa fa-plus mr-1"></i> Add Sub-Head
+                    </button>
+                </div>
+                <hr className="my-4 border-slate-100" />
+                <h4 className="text-lg font-bold text-indigo-800 mb-4">Expenses List:</h4>
+                <div className="space-y-4">
+                    {displayedExpenses.length > 0 ? (
+                        displayedExpenses.map(item => (
+                            <div key={item.id} className="flex flex-col md:flex-row md:items-center bg-white p-4 rounded-lg shadow-sm border border-slate-100">
+                                <div className="flex-1">
+                                    <div className="font-semibold text-slate-900 flex items-center flex-wrap gap-x-2">
+                                        <span>{item.sub.name}</span>
+                                    </div>
+                                    <p className="text-sm text-slate-600 mt-1">Date: {item.date}</p>
+                                   <p className="text-sm text-slate-600 mt-1">
+  Amount: <span className="text-emerald-700 font-extrabold text-base tracking-wide">{formatCurrency(item.amount)}</span>
+</p>
+                                    <p className="text-sm text-slate-600 mt-1">Expense Type: {item.expense_type}</p>
+                                    <p className="text-sm text-slate-600 mt-1">Purchased By: {item.purchased_by}</p>
+                                    {item.paid_at && <p className="text-sm text-slate-500 mt-1">Paid At: {item.paid_at}</p>}
+                                    {item.approved_by && <p className="text-sm text-slate-500 mt-1">Approved By: {item.approved_by}</p>}
+                                </div>
+                                <div className="flex items-center gap-3 mt-3 md:mt-0">
+                                    {item.bill_image ? (
+                                        <button onClick={() => openImageModal(item.bill_image)} className="focus:outline-none">
+                                            <img src={item.bill_image} alt="Bill" className="w-10 h-10 object-cover border border-slate-200 rounded-md shadow inline-block cursor-pointer" />
+                                        </button>
+                                    ) : (
+                                        <div className="w-10 h-10 flex items-center justify-center border border-slate-200 rounded-md bg-slate-50 text-slate-400 text-[8px] text-center p-1">
+                                            No Image
+                                        </div>
+                                    )}
+                                    <button onClick={() => openEditExpenseItem(item)} className={`${iconBtn} text-indigo-700 text-xs`} title="Edit"><i className="fa fa-edit"></i></button>
+                                    <button onClick={() => openDeleteExpenseItem(item)} className={`${iconBtn} text-rose-600 text-xs`} title="Delete"><i className="fa fa-trash"></i></button>
+                                    <button
+                                        onClick={() => openCreateSubHeadFromItem(mainHead.monthly_sheet, item.sub.expense_head)}
+                                        className={`${iconBtn} text-green-600 text-xs`}
+                                        title="Add Sub-Head"
+                                    >
+                                        <i className="fa fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="text-sm text-slate-400 text-center py-5">No expenses for this selection.</div>
+                    )}
+                </div>
+                {totalPages > 1 && (
+                    <div className="flex justify-center mt-6">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className={`${btnOutline} ${btnSm} mr-2 disabled:opacity-50`}
+                        >
+                            Previous
+                        </button>
+                        <span className="text-slate-700 font-semibold px-4 py-1.5">{page} / {totalPages}</span>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className={`${btnOutline} ${btnSm} ml-2 disabled:opacity-50`}
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// Main Accounts component
 export default function Accounts({ user }) {
     const navigate = useNavigate();
 
@@ -112,17 +243,22 @@ export default function Accounts({ user }) {
     const [editingHead, setEditingHead] = useState(null);
     const [deletingHead, setDeletingHead] = useState(null);
     const [newHeadName, setNewHeadName] = useState('');
-    const [expandedHeadId, setExpandedHeadId] = useState(null);
+
+    // New state for selected main head view
+    const [selectedMainHead, setSelectedMainHead] = useState(null);
 
     const [showCreateSubHead, setShowCreateSubHead] = useState(false);
     const [showEditSubHead, setShowEditSubHead] = useState(false);
     const [showDeleteSubHead, setShowDeleteSubHead] = useState(false);
     const [editingSubHead, setEditingSubHead] = useState(null);
     const [deletingSubHead, setDeletingSubHead] = useState(null);
-    const [subHeadSheetId, setSubHeadSheetId] = useState(null);
-    const [subHeadMainHeadId, setSubHeadMainHeadId] = useState(null);
-    const [newSubHeadName, setNewSubHeadName] = useState('');
+    // Updated state for sub-category creation data
+    const [newSubHeadData, setNewSubHeadData] = useState(null);
     const [subHeadError, setSubHeadError] = useState(null);
+
+    // New states for creating sub-head from an expense item
+    const [showCreateSubHeadFromItem, setShowCreateSubHeadFromItem] = useState(false);
+    const [newSubHeadFromItemData, setNewSubHeadFromItemData] = useState({ name: '', sheetId: null, mainHeadId: null });
 
     const [showCreateItem, setShowCreateItem] = useState(false);
     const [itemSheetId, setItemSheetId] = useState(null);
@@ -155,12 +291,11 @@ export default function Accounts({ user }) {
 
     const [sheetPage, setSheetPage] = useState(1);
     const sheetsPerPage = 5;
-    const [expensePage, setExpensePage] = useState({});
-    const expensesPerPage = 4;
 
-    const [showExpensesPage, setShowExpensesPage] = useState(false);
-    const [sheetForExpenses, setSheetForExpenses] = useState(null);
-    const [selectedHeadForExpenses, setSelectedHeadForExpenses] = useState(null);
+    // For editing sub head
+    const [newSubHeadName, setNewSubHeadName] = useState('');
+    const [subHeadSheetId, setSubHeadSheetId] = useState(null);
+    const [subHeadMainHeadId, setSubHeadMainHeadId] = useState(null);
 
     useEffect(() => {
         fetchSheets();
@@ -212,13 +347,13 @@ export default function Accounts({ user }) {
         setShowEditSheet(true);
         setError(null);
     }
-    function closeEditSheet() { 
-        setEditingSheet(null); 
+    function closeEditSheet() {
+        setEditingSheet(null);
         setEditSheetMonth('');
         setEditSheetYear('');
         setEditSheetIsApproved('false');
-        setShowEditSheet(false); 
-        setError(null); 
+        setShowEditSheet(false);
+        setError(null);
     }
     async function handleEditSheet(e) {
         e.preventDefault();
@@ -244,10 +379,6 @@ export default function Accounts({ user }) {
         try {
             await axiosInstance.delete(`/sheets/${deletingSheet.id}/`);
             setShowDeleteSheet(false);
-            if (deletingSheet.id === sheetForExpenses?.id) {
-                setShowExpensesPage(false);
-                setSheetForExpenses(null);
-            }
             fetchSheets();
         } catch (err) {
             setError(getBackendError(err, 'Failed to delete sheet'));
@@ -297,16 +428,14 @@ export default function Accounts({ user }) {
     }
 
     function openCreateSubHead(sheetId, headId) {
-        setSubHeadSheetId(sheetId);
-        setSubHeadMainHeadId(headId);
+        setNewSubHeadData({ sheetId, headId, name: '' });
         setShowCreateSubHead(true);
-        setNewSubHeadName('');
         setSubHeadError(null);
         setError(null);
     }
     function closeCreateSubHead() {
         setShowCreateSubHead(false);
-        setNewSubHeadName('');
+        setNewSubHeadData(null);
         setSubHeadError(null);
         setError(null);
     }
@@ -314,18 +443,59 @@ export default function Accounts({ user }) {
         e.preventDefault();
         setSubHeadError(null);
         setError(null);
+
+        if (!newSubHeadData?.name || !newSubHeadData?.headId || !newSubHeadData?.sheetId) {
+            setSubHeadError('Missing required information: Name, Main Head ID, or Sheet ID.');
+            return;
+        }
+
         try {
             await axiosInstance.post('/sub-expense-heads/', {
-                name: newSubHeadName,
-                expense_head: subHeadMainHeadId,
-                monthly_sheet: subHeadSheetId
+                name: newSubHeadData.name,
+                expense_head: newSubHeadData.headId,
+                monthly_sheet: newSubHeadData.sheetId
             });
-            setShowCreateSubHead(false);
+            closeCreateSubHead();
             fetchSheets();
         } catch (err) {
             setSubHeadError(getBackendError(err, 'Failed to create sub category'));
         }
     }
+
+    // New functions for the new sub-head creation flow from an item
+    function openCreateSubHeadFromItem(sheetId, mainHeadId) {
+        setNewSubHeadFromItemData({ ...newSubHeadFromItemData, sheetId, mainHeadId });
+        setShowCreateSubHeadFromItem(true);
+        setSubHeadError(null);
+    }
+    function closeCreateSubHeadFromItem() {
+        setShowCreateSubHeadFromItem(false);
+        setNewSubHeadFromItemData({ name: '', sheetId: null, mainHeadId: null });
+        setSubHeadError(null);
+    }
+    async function handleCreateSubHeadFromItem(e) {
+        e.preventDefault();
+        setSubHeadError(null);
+        setError(null);
+
+        if (!newSubHeadFromItemData?.name || !newSubHeadFromItemData?.mainHeadId || !newSubHeadFromItemData?.sheetId) {
+            setSubHeadError('Missing required information: Sub-Category Name and Main Head.');
+            return;
+        }
+
+        try {
+            await axiosInstance.post('/sub-expense-heads/', {
+                name: newSubHeadFromItemData.name,
+                expense_head: newSubHeadFromItemData.mainHeadId,
+                monthly_sheet: newSubHeadFromItemData.sheetId
+            });
+            closeCreateSubHeadFromItem();
+            fetchSheets();
+        } catch (err) {
+            setSubHeadError(getBackendError(err, 'Failed to create sub category'));
+        }
+    }
+    
     function openEditSubHead(subHead) {
         setEditingSubHead(subHead);
         setNewSubHeadName(subHead.name);
@@ -528,7 +698,17 @@ export default function Accounts({ user }) {
 
     const selectedSheet = expenseSheets.find(s => s.id === selectedSheetId) || null;
 
-    function SheetBlock({ sheet }) {
+    // PATCH: include monthly_sheet in mainHead when opening main head view
+    function openMainHeadView(mainHead, sheetId) {
+        setSelectedMainHead({ ...mainHead, monthly_sheet: sheetId });
+    }
+
+    function closeMainHeadView() {
+        setSelectedMainHead(null);
+    }
+
+    // Updated SheetBlock component
+    function SheetBlock({ sheet, openEditSheet, openDeleteSheet, openCreateItem, openMainHeadView }) {
         return (
             <div className={`${cardBg} ${cardShadow} ${cardRounded} ${cardBorder} p-7 mb-10 hover:scale-[1.01] transition-transform duration-200 group`}>
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center border-b border-slate-100 pb-4 mb-4 gap-2">
@@ -558,11 +738,7 @@ export default function Accounts({ user }) {
                     </div>
                     <div className="flex flex-wrap gap-3">
                         <button className={`${btnOutline} ${btnSm} hover:bg-slate-100`} onClick={() => openEditSheet(sheet)}><i className="fa fa-edit mr-1"></i>Edit</button>
-                        <button className={`${btnDanger} ${btnSm}`} onClick={() => openDeleteSheet(sheet)}><i className="fa fa-trash mr-1"></i>Delete</button>
                         <button className={`${btnAccent} ${btnSm}`} onClick={() => openCreateItem(sheet.id)}><i className="fa fa-plus mr-1"></i>Add Expense Item</button>
-                        <button className={`${btnOutline} ${btnSm}`} onClick={() => { setSheetForExpenses(sheet); setShowExpensesPage(true); }}>
-                            <i className="fa fa-list mr-1"></i>See Expenses
-                        </button>
                     </div>
                 </div>
                 <div className="text-base text-indigo-700 mb-2 font-bold">
@@ -571,35 +747,10 @@ export default function Accounts({ user }) {
                 <div className="font-bold text-indigo-800 mt-2 mb-2">Main Expense Heads:</div>
                 {sheet.main_heads_in_sheet.length > 0 ? (
                     sheet.main_heads_in_sheet.map(head => (
-                        <div key={head.id} className="cursor-pointer" onClick={() => setExpandedHeadId(expandedHeadId === head.id ? null : head.id)}>
-                            <div className="flex items-center gap-4 text-base mb-1 pl-2 py-1 hover:bg-slate-100 rounded-lg transition">
-                                <span className="font-semibold text-slate-900">{head.name}</span>
-                                <span className="text-emerald-700 font-bold">{formatCurrency(head.total_expense)}</span>
-                                <button onClick={(e) => { e.stopPropagation(); openEditHead(head); }} className={`${iconBtn} text-indigo-700 text-xs`} title="Edit"><i className="fa fa-edit"></i></button>
-                                <button onClick={(e) => { e.stopPropagation(); openDeleteHead(head); }} className={`${iconBtn} text-rose-600 text-xs`} title="Delete"><i className="fa fa-trash"></i></button>
-                                <svg className={`w-4 h-4 text-indigo-400 ml-auto transition-transform ${expandedHeadId === head.id ? 'rotate-90' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </div>
-                            {expandedHeadId === head.id && (
-                                <div className="ml-2 md:ml-8 mt-2 space-y-2 border-l-2 border-indigo-200 pl-2 md:pl-4 py-2 bg-indigo-50/60 rounded-lg">
-                                    <h4 className="text-sm font-bold text-indigo-800">Sub-Categories:</h4>
-                                    {(head.sub_heads_in_head || []).length > 0 ? (
-                                        (head.sub_heads_in_head || []).map(subHead => (
-                                            <div key={subHead.id} className="flex items-center text-xs text-indigo-700">
-                                                <span className="font-medium mr-2">{subHead.name}</span>
-                                                <button onClick={(e) => { e.stopPropagation(); openEditSubHead(subHead); }} className={`${iconBtn} text-indigo-600`} title="Edit"><i className="fa fa-edit"></i></button>
-                                                <button onClick={(e) => { e.stopPropagation(); openDeleteSubHead(subHead); }} className={`${iconBtn} text-rose-600 ml-2`} title="Delete"><i className="fa fa-trash"></i></button>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-xs text-slate-400">No sub-categories.</div>
-                                    )}
-                                    <button onClick={(e) => { e.stopPropagation(); openCreateSubHead(sheet.id, head.id); }} className={`${btnOutline} ${btnSm} mt-2 text-xs`}>
-                                        <i className="fa fa-plus mr-1"></i> Add Sub-Head
-                                    </button>
-                                </div>
-                            )}
+                        <div key={head.id} onClick={() => openMainHeadView(head, sheet.id)} className="cursor-pointer flex items-center gap-4 text-base mb-1 pl-2 py-1 hover:bg-slate-100 rounded-lg transition">
+                            <span className="font-semibold text-slate-900">{head.name}</span>
+                            <span className="text-emerald-700 font-bold">{formatCurrency(head.total_expense)}</span>
+                            <button onClick={(e) => { e.stopPropagation(); openEditHead(head); }} className={`${iconBtn} text-indigo-700 text-xs`} title="Edit"><i className="fa fa-edit"></i></button>
                         </div>
                     ))
                 ) : (
@@ -614,208 +765,8 @@ export default function Accounts({ user }) {
             </div>
         );
     }
-
-    function ExpensesPage({ sheet, onBack }) {
-        if (!sheet) return null;
-        const mainHeads = sheet.main_heads_in_sheet || [];
-
-        function ExpensesTable({ expenses }) {
-            return (
-                <div>
-                    {/* Desktop Table */}
-                    <div className="hidden md:block">
-                        <div className={responsiveTable}>
-                            <table className="min-w-full w-full bg-white rounded-2xl shadow mb-2">
-                                <thead>
-                                    <tr>
-                                        <th className={tableHeader}>Date</th>
-                                        <th className={tableHeader}>Amount</th>
-                                        <th className={tableHeader}>Type</th>
-                                        <th className={tableHeader}>Purchased By</th>
-                                        <th className={tableHeader}>Paid At</th>
-                                        <th className={tableHeader}>Approved By</th>
-                                        <th className={tableHeader}>Sub Category</th>
-                                        <th className={tableHeader}>Image</th>
-                                        <th className={tableHeader}>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {expenses.length > 0 ? expenses.map(item => (
-                                        <tr key={item.id} className="border-t border-slate-100/70 text-sm hover:bg-slate-50 transition-colors">
-                                            <td className="px-3 py-2 text-center text-slate-700">{item.date}</td>
-                                            <td className="px-3 py-2 text-center text-emerald-700 font-medium">{formatCurrency(item.amount)}</td>
-                                            <td className="px-3 py-2 text-center text-slate-700 capitalize">{item.expense_type}</td>
-                                            <td className="px-3 py-2 text-center text-slate-700">{item.purchased_by}</td>
-                                            <td className="px-3 py-2 text-center text-slate-700">{item.paid_at}</td>
-                                            <td className="px-3 py-2 text-center text-slate-700">{item.approved_by}</td>
-                                            <td className="px-3 py-2 text-center text-indigo-700 font-medium">{item.sub.name}</td>
-                                            <td className="px-3 py-2 text-center">
-                                                {item.bill_image && (
-                                                    <button onClick={() => openImageModal(item.bill_image)} className="focus:outline-none">
-                                                        <img src={item.bill_image} alt="Bill" className="w-10 h-10 object-cover border border-slate-200 rounded-md shadow inline-block cursor-pointer" />
-                                                    </button>
-                                                )}
-                                            </td>
-                                            <td className="px-3 py-2 text-center">
-                                                <div className="flex gap-2 justify-center items-center">
-                                                    <button onClick={() => openEditExpenseItem(item)} className={`${iconBtn} text-indigo-700 text-xs md:text-sm`} title="Edit"><i className="fa fa-edit"></i></button>
-                                                    <button onClick={() => openDeleteExpenseItem(item)} className={`${iconBtn} text-rose-600 text-xs md:text-sm`} title="Delete"><i className="fa fa-trash"></i></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )) : (
-                                        <tr>
-                                            <td colSpan="9" className="text-center py-4 text-slate-400">No expenses found for this head.</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    {/* Mobile Grid */}
-                    <div className="md:hidden flex flex-col gap-4">
-                        {expenses.length > 0 ? expenses.map(item => (
-                            <div key={item.id} className="bg-white/90 border border-slate-200 rounded-xl shadow p-4 flex flex-col gap-1">
-                                <div className="flex flex-wrap gap-x-4 gap-y-2 items-center mb-2">
-                                    <span className="font-bold text-indigo-700">{item.sub.name}</span>
-                                    <span className="text-emerald-700 font-bold">{formatCurrency(item.amount)}</span>
-                                    <span className="text-xs text-slate-400">({item.date})</span>
-                                </div>
-                                <div className="text-sm text-slate-800"><b>Type:</b> {item.expense_type}</div>
-                                <div className="text-sm text-slate-800"><b>Purchased By:</b> {item.purchased_by}</div>
-                                <div className="text-sm text-slate-800"><b>Paid At:</b> {item.paid_at}</div>
-                                <div className="text-sm text-slate-800"><b>Approved By:</b> {item.approved_by}</div>
-                                {item.bill_image && (
-                                    <div className="mt-2 flex flex-col items-start gap-1">
-                                        <button
-                                            onClick={() => openImageModal(item.bill_image)}
-                                            className="relative focus:outline-none group"
-                                        >
-                                            <img
-                                                src={item.bill_image}
-                                                alt="Bill"
-                                                className="w-20 h-20 object-cover border border-slate-200 rounded-lg shadow cursor-pointer"
-                                            />
-                                            <span className="absolute bottom-1 right-1 bg-indigo-700 bg-opacity-80 text-white text-xs px-2 py-0.5 rounded group-hover:scale-110 transition-transform">
-                                                View
-                                            </span>
-                                        </button>
-                                    </div>
-                                )}
-                                <div className="flex gap-2 mt-2">
-                                    <button onClick={() => openEditExpenseItem(item)} className={`${iconBtn} text-indigo-700 text-xs`} title="Edit"><i className="fa fa-edit"></i></button>
-                                    <button onClick={() => openDeleteExpenseItem(item)} className={`${iconBtn} text-rose-600 text-xs`} title="Delete"><i className="fa fa-trash"></i></button>
-                                </div>
-                            </div>
-                        )) : (
-                            <div className="text-center text-slate-400 bg-white/80 border border-slate-100 p-6 rounded-xl">No expenses found for this head.</div>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        const handleHeadSelect = (head) => {
-            setSelectedHeadForExpenses(head);
-            setExpensePage(prev => ({ ...prev, [head.id]: 1 }));
-        };
-
-        const currentHead = selectedHeadForExpenses;
-        const subHeadsForCurrentHead = currentHead ? currentHead.sub_heads_in_head : [];
-        let allExpenses = [];
-        subHeadsForCurrentHead.forEach(sub => {
-            if (sub.items && sub.items.length) {
-                allExpenses = allExpenses.concat(sub.items.map(item => ({ ...item, sub })));
-            }
-        });
-        
-        // Sort expenses by date in descending order
-        allExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        const page = expensePage[currentHead?.id] || 1;
-        const totalPages = Math.ceil(allExpenses.length / expensesPerPage) || 1;
-        const shownExpenses = allExpenses.slice((page - 1) * expensesPerPage, page * expensesPerPage);
-
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-indigo-100 p-4 md:p-8 flex flex-col items-center">
-                <div className="w-full max-w-5xl mx-auto">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-                        <button onClick={onBack} className="text-indigo-700 font-semibold flex items-center text-base md:text-lg" >
-                            <svg className="w-5 h-5 md:w-6 md:h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
-                            </svg> <span className="hidden md:inline">Back to Sheets</span>
-                            <span className="md:hidden">Sheets</span>
-                        </button>
-                        <h2 className={mainTitle + " text-center flex-1"}>Expenses for Sheet {sheet.month}/{sheet.year}</h2>
-                        <div className="w-12" />
-                    </div>
-                    <div className={`${cardBg} ${cardShadow} ${cardRounded} ${cardBorder} p-4 md:p-8 mb-4`}>
-                        <h3 className="text-lg md:text-xl font-bold text-indigo-800 mb-3">Main Expense Heads:</h3>
-                        <div className="flex flex-wrap gap-2">
-                            {mainHeads.length > 0 ? mainHeads.map(head => (
-                                <button
-                                    key={head.id}
-                                    onClick={() => handleHeadSelect(head)}
-                                    className={`${btnOutline} ${selectedHeadForExpenses?.id === head.id ? 'bg-indigo-100 font-bold' : ''}`}
-                                >
-                                    {head.name}
-                                </button>
-                            )) : (
-                                <p className="text-slate-400">No main heads found for this sheet.</p>
-                            )}
-                        </div>
-                    </div>
-                    {selectedHeadForExpenses && (
-                        <div className={`${cardBg} ${cardShadow} ${cardRounded} ${cardBorder} p-4 md:p-8`}>
-                            <div className="font-bold text-indigo-900 mb-3 text-xl flex flex-col md:flex-row md:items-center md:gap-4">
-                                <span>Expenses for: {selectedHeadForExpenses.name}</span>
-                                <span className="text-sm font-normal text-indigo-600 mt-1 md:mt-0">Total: <span className="font-bold text-emerald-700">{formatCurrency(selectedHeadForExpenses.total_expense)}</span></span>
-                            </div>
-                            <ExpensesTable expenses={shownExpenses} />
-                            <div className="flex justify-center mt-4">
-                                <button
-                                    onClick={() => setExpensePage(prev => ({ ...prev, [currentHead.id]: prev[currentHead.id] - 1 }))}
-                                    disabled={page === 1}
-                                    className={`${btnOutline} ${btnSm} mr-2 disabled:opacity-50`}
-                                >
-                                    Previous
-                                </button>
-                                <span className="text-slate-700 font-semibold px-4 py-1.5">{page} / {totalPages}</span>
-                                <button
-                                    onClick={() => setExpensePage(prev => ({ ...prev, [currentHead.id]: prev[currentHead.id] + 1 }))}
-                                    disabled={page === totalPages}
-                                    className={`${btnOutline} ${btnSm} ml-2 disabled:opacity-50`}
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-                {showImageModal && modalImageSrc && (
-                    <Modal onClose={closeImageModal} key="image-modal">
-                        <h3 className={secTitle + " mb-4"}>Bill Image</h3>
-                        <img src={modalImageSrc} alt="Bill" className="max-w-full h-auto rounded-lg shadow-lg mx-auto" style={{maxHeight: '70vh'}} />
-                        <div className="text-center mt-2">
-                            <a
-                                href={modalImageSrc}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={`${btnAccent} mt-2`}
-                                download
-                            >
-                                View Full Size / Download
-                            </a>
-                        </div>
-                    </Modal>
-                )}
-            </div>
-        );
-    }
-
-    if (showExpensesPage && sheetForExpenses) {
-        return <ExpensesPage sheet={sheetForExpenses} onBack={() => setShowExpensesPage(false)} />;
-    }
+    
+    // The ExpensesPage component has been removed as per your request.
 
     if (loading) return <div className="text-center p-8 text-indigo-700 font-semibold">Loading...</div>;
     if (!user) return <Navigate to="/login" replace={true} />;
@@ -823,69 +774,93 @@ export default function Accounts({ user }) {
     return (
         <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-indigo-100 p-4 md:p-8">
             <div className="w-full max-w-5xl mx-auto">
-                <div className="flex justify-between items-center mb-6 md:mb-10">
-                    <button onClick={handleBack} className="text-indigo-700 font-semibold flex items-center text-base md:text-lg">
-                        <svg className="w-5 h-5 md:w-6 md:h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
-                        </svg> Back
-                    </button>
-                    <h1 className={mainTitle}>Manage Sheets</h1>
-                    <button onClick={openCreateSheet} className={`${btnAccent}`}>
-                        <i className="fa fa-plus mr-1"></i> New Sheet
-                    </button>
-                </div>
-                {error && <div className={errorBox}>{error}</div>}
-
-                {/* Search Bar */}
-                <div className={`${cardBg} ${cardShadow} ${cardRounded} ${cardBorder} p-5 mb-6 flex flex-col md:flex-row items-center gap-4`}>
-                    <h3 className="font-semibold text-slate-800 text-lg md:text-xl">Find a Specific Sheet:</h3>
-                    <form onSubmit={handleSheetSearch} className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 items-center">
-                        <input
-                            type="text"
-                            placeholder="Year (e.g., 2025)"
-                            value={searchYear}
-                            onChange={e => setSearchYear(e.target.value)}
-                            className={input}
-                        />
-                        <input
-                            type="text"
-                            placeholder="Month (e.g., 8)"
-                            value={searchMonth}
-                            onChange={e => setSearchMonth(e.target.value)}
-                            className={input}
-                        />
-                        <button type="submit" className={btnAccent + ' md:w-auto w-full'}>
-                            <i className="fa fa-search mr-1"></i> Search
-                        </button>
-                        {filteredSheet && (
-                            <button type="button" onClick={clearFilter} className={`${btnOutline} md:w-auto w-full`}>
-                                Clear Filter
-                            </button>
-                        )}
-                    </form>
-                </div>
-
-                {shownSheets.length > 0 ? (
-                    shownSheets.map(sheet => <SheetBlock key={sheet.id} sheet={sheet} />)
+                {selectedMainHead ? (
+                    <MainHeadExpensesView
+                        mainHead={selectedMainHead}
+                        onClose={closeMainHeadView}
+                        openEditExpenseItem={openEditExpenseItem}
+                        openDeleteExpenseItem={openDeleteExpenseItem}
+                        openImageModal={openImageModal}
+                        openCreateSubHead={openCreateSubHead}
+                        openEditSubHead={openEditSubHead}
+                        openDeleteSubHead={openDeleteSubHead}
+                        expenseHeads={expenseHeads}
+                        openCreateSubHeadFromItem={openCreateSubHeadFromItem}
+                    />
                 ) : (
-                    <div className={`${cardBg} ${cardShadow} ${cardRounded} ${cardBorder} p-10 text-center text-slate-500 font-medium`}>
-                        No expense sheets found.
-                    </div>
+                    <>
+                        <div className="flex justify-between items-center mb-6 md:mb-10">
+                            <button onClick={handleBack} className="text-indigo-700 font-semibold flex items-center text-base md:text-lg">
+                                <svg className="w-5 h-5 md:w-6 md:h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+                                </svg> Back
+                            </button>
+                            <h1 className={mainTitle}>Manage Sheets</h1>
+                            <button onClick={openCreateSheet} className={`${btnAccent}`}>
+                                <i className="fa fa-plus mr-1"></i> New Sheet
+                            </button>
+                        </div>
+                        {error && <div className={errorBox}>{error}</div>}
+        
+                        {/* Search Bar */}
+                        <div className={`${cardBg} ${cardShadow} ${cardRounded} ${cardBorder} p-5 mb-6 flex flex-col md:flex-row items-center gap-4`}>
+                            <h3 className="font-semibold text-slate-800 text-lg md:text-xl">Find a Specific Sheet:</h3>
+                            <form onSubmit={handleSheetSearch} className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 items-center">
+                                <input
+                                    type="text"
+                                    placeholder="Year (e.g., 2025)"
+                                    value={searchYear}
+                                    onChange={e => setSearchYear(e.target.value)}
+                                    className={input}
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Month (e.g., 8)"
+                                    value={searchMonth}
+                                    onChange={e => setSearchMonth(e.target.value)}
+                                    className={input}
+                                />
+                                <button type="submit" className={btnAccent + ' md:w-auto w-full'}>
+                                    <i className="fa fa-search mr-1"></i> Search
+                                </button>
+                                {filteredSheet && (
+                                    <button type="button" onClick={clearFilter} className={`${btnOutline} md:w-auto w-full`}>
+                                        Clear Filter
+                                    </button>
+                                )}
+                            </form>
+                        </div>
+        
+                        {shownSheets.length > 0 ? (
+                            shownSheets.map(sheet => <SheetBlock
+                                key={sheet.id}
+                                sheet={sheet}
+                                openEditSheet={openEditSheet}
+                                openDeleteSheet={openDeleteSheet}
+                                openCreateItem={openCreateItem}
+                                openMainHeadView={openMainHeadView}
+                            />)
+                        ) : (
+                            <div className={`${cardBg} ${cardShadow} ${cardRounded} ${cardBorder} p-10 text-center text-slate-500 font-medium`}>
+                                No expense sheets found.
+                            </div>
+                        )}
+        
+                        {totalSheetPages > 1 && !filteredSheet && (
+                            <div className="flex justify-center mt-8">
+                                <button onClick={() => setSheetPage(p => Math.max(1, p - 1))} className={`${btnOutline} ${btnSm} mr-2`} disabled={sheetPage === 1}>
+                                    Previous
+                                </button>
+                                <span className="text-slate-700 font-semibold px-4 py-1.5">{sheetPage} / {totalSheetPages}</span>
+                                <button onClick={() => setSheetPage(p => Math.min(totalSheetPages, p + 1))} className={`${btnOutline} ${btnSm} ml-2`} disabled={sheetPage === totalSheetPages}>
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
-
-                {totalSheetPages > 1 && !filteredSheet && (
-                    <div className="flex justify-center mt-8">
-                        <button onClick={() => setSheetPage(p => Math.max(1, p - 1))} className={`${btnOutline} ${btnSm} mr-2`} disabled={sheetPage === 1}>
-                            Previous
-                        </button>
-                        <span className="text-slate-700 font-semibold px-4 py-1.5">{sheetPage} / {totalSheetPages}</span>
-                        <button onClick={() => setSheetPage(p => Math.min(totalSheetPages, p + 1))} className={`${btnOutline} ${btnSm} ml-2`} disabled={sheetPage === totalSheetPages}>
-                            Next
-                        </button>
-                    </div>
-                )}
-
-                {/* Modals for different CRUD operations */}
+        
+                {/* All Modals are kept here as they were */}
                 {showCreateSheet && (
                     <Modal onClose={closeCreateSheet} key="create-sheet-modal">
                         <h3 className={secTitle + " mb-4"}>Create New Sheet</h3>
@@ -989,16 +964,52 @@ export default function Accounts({ user }) {
                         <ModalFooter onCancel={closeDeleteHead} onDelete={handleDeleteHead} deleteLabel="Delete" />
                     </Modal>
                 )}
-                {showCreateSubHead && (
+                {showCreateSubHead && newSubHeadData && (
                     <Modal onClose={closeCreateSubHead} key="create-sub-head-modal">
-                        <h3 className={secTitle + " mb-4"}>Create New Sub-Category</h3>
+                        <h3 className={secTitle + " mb-4"}>Add New Sub-Category</h3>
                         {subHeadError && <div className={errorBox}>{subHeadError}</div>}
                         <form onSubmit={handleCreateSubHead}>
                             <div className="mb-4">
-                                <label className={label} htmlFor="sub-head-name">Sub-Category Name</label>
-                                <input type="text" name="name" id="sub-head-name" className={input} value={newSubHeadName} onChange={e => setNewSubHeadName(e.target.value)} required />
+                                <label className={label}>Sub-Category Name</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g., Groceries"
+                                    value={newSubHeadData?.name || ''}
+                                    onChange={(e) => setNewSubHeadData({ ...newSubHeadData, name: e.target.value })}
+                                    className={input}
+                                    required
+                                />
                             </div>
-                            <ModalFooter onCancel={closeCreateSubHead} onPrimary={handleCreateSubHead} primaryLabel="Create Sub-Category" />
+                            <ModalFooter onCancel={closeCreateSubHead} onPrimary={handleCreateSubHead} primaryLabel="Create" />
+                        </form>
+                    </Modal>
+                )}
+                {showCreateSubHeadFromItem && newSubHeadFromItemData && (
+                    <Modal onClose={closeCreateSubHeadFromItem} key="create-sub-head-from-item-modal">
+                        <h3 className={secTitle + " mb-4"}>Add New Sub-Category</h3>
+                        {subHeadError && <div className={errorBox}>{subHeadError}</div>}
+                        <form onSubmit={handleCreateSubHeadFromItem}>
+                            <div className="mb-4">
+                                <label className={label}>Sub-Category Name</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g., Groceries"
+                                    value={newSubHeadFromItemData?.name || ''}
+                                    onChange={(e) => setNewSubHeadFromItemData({ ...newSubHeadFromItemData, name: e.target.value })}
+                                    className={input}
+                                    required
+                                />
+                            </div>
+                            <div className="mb-4">
+                                <label className={label}>Main Head</label>
+                                <input
+                                    type="text"
+                                    value={expenseHeads.find(head => head.id === newSubHeadFromItemData.mainHeadId)?.name || ''}
+                                    className={input}
+                                    disabled
+                                />
+                            </div>
+                            <ModalFooter onCancel={closeCreateSubHeadFromItem} onPrimary={handleCreateSubHeadFromItem} primaryLabel="Create" />
                         </form>
                     </Modal>
                 )}
@@ -1035,14 +1046,14 @@ export default function Accounts({ user }) {
                                         className={`${input} flex justify-between items-center`}
                                         onClick={() => setItemSubHeadSelectOpen(!itemSubHeadSelectOpen)}
                                     >
-                                        <span>{itemSubHeadId ? expenseSheets.find(s => s.id === itemSheetId).sub_heads_in_sheet.find(sh => sh.id === itemSubHeadId)?.name : 'Select a Sub-Category'}</span>
+                                        <span>{itemSubHeadId ? expenseSheets.find(s => s.id === itemSheetId).main_heads_in_sheet.flatMap(mh => mh.sub_heads_in_head).find(sh => sh.id === itemSubHeadId)?.name : 'Select a Sub-Category'}</span>
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                                         </svg>
                                     </button>
                                     {itemSubHeadSelectOpen && (
                                         <ul className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 max-h-48 overflow-y-auto">
-                                            {expenseSheets.find(s => s.id === itemSheetId)?.sub_heads_in_sheet.map(sub => (
+                                            {expenseSheets.find(s => s.id === itemSheetId)?.main_heads_in_sheet.flatMap(mh => mh.sub_heads_in_head).map(sub => (
                                                 <li key={sub.id} className="p-3 hover:bg-slate-100 cursor-pointer text-sm text-slate-800"
                                                     onClick={() => { setItemSubHeadId(sub.id); setItemSubHeadSelectOpen(false); }}>
                                                     {sub.name} ({sub.expense_head_name})
@@ -1159,7 +1170,7 @@ export default function Accounts({ user }) {
                                     </div>
                                 )}
                             </div>
-                            <ModalFooter onCancel={closeEditExpenseItem} />
+                            <ModalFooter onCancel={closeEditExpenseItem} onPrimary={handleEditExpenseItem} primaryLabel="Save Changes" />
                         </form>
                     </Modal>
                 )}
@@ -1173,7 +1184,7 @@ export default function Accounts({ user }) {
                 {showImageModal && modalImageSrc && (
                     <Modal onClose={closeImageModal} key="image-modal">
                         <h3 className={secTitle + " mb-4"}>Bill Image</h3>
-                        <img src={modalImageSrc} alt="Bill" className="max-w-full h-auto rounded-lg shadow-lg" style={{maxHeight: '70vh'}} />
+                        <img src={modalImageSrc} alt="Bill" className="max-w-full h-auto rounded-lg shadow-lg mx-auto" style={{maxHeight: '70vh'}} />
                         <div className="text-center mt-2">
                             <a
                                 href={modalImageSrc}
