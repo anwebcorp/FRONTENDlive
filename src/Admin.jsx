@@ -112,7 +112,7 @@ export default function Admin({ user, setUser }) {
             time_since_joining: profile.time_since_joining || "N/A",
             Job_title: profile.Job_title || "N/A",
             photo: (profile.image && typeof profile.image === 'string' && profile.image.startsWith('/'))
-                ? `https://employeemanagement.company${profile.image}`
+                ? `https://employeemanagement.company    ${profile.image}`
                 : DEFAULT_AVATAR_PLACEHOLDER,
         }));
         setEmployees(formattedEmployees);
