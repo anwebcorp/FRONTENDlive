@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import axiosInstance from "./axiosInstance";
+import axios from './axios'; 
 import useRefreshToken from "./useRefreshToken";
 import useAuth from "./useAuth";
 
@@ -8,13 +8,19 @@ const useAxiosPrivate = () => {
     const { auth } = useAuth();
 
     useEffect(() => {
-        // Request: Attach access token
-        const requestIntercept = axiosInstance.interceptors.request.use(
+        // Intercept requests and attach the Authorization header
+        const requestIntercept = axios.interceptors.request.use(
             (config) => {
                 if (!config.headers["Authorization"]) {
-                    const token = auth?.accessToken || localStorage.getItem("access_token");
-                    if (token) {
-                        config.headers["Authorization"] = `Bearer ${token}`;
+                    // Check if the user is authenticated and has an access token
+                    if (auth?.accessToken) {
+                        config.headers["Authorization"] = `Bearer ${auth.accessToken}`;
+                    } else {
+                        // If no token in context, check localStorage for one
+                        const storedToken = localStorage.getItem('access_token');
+                        if (storedToken) {
+                            config.headers["Authorization"] = `Bearer ${storedToken}`;
+                        }
                     }
                 }
                 return config;
@@ -22,19 +28,20 @@ const useAxiosPrivate = () => {
             (error) => Promise.reject(error)
         );
 
-        // Response: Refresh on 401
-        const responseIntercept = axiosInstance.interceptors.response.use(
+        // Intercept responses to handle 401 Unauthorized errors
+        const responseIntercept = axios.interceptors.response.use(
             (response) => response,
             async (error) => {
                 const prevRequest = error?.config;
+                // If it's a 401 and not a retry attempt
                 if (error?.response?.status === 401 && !prevRequest?._retry) {
                     prevRequest._retry = true;
                     try {
-                        const newAccessToken = await refresh();
+                        const newAccessToken = await refresh(); // Call refresh hook to get new token
                         prevRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
-                        return axiosInstance(prevRequest);
+                        return axios(prevRequest); // Retry the original request with new token
                     } catch (refreshError) {
-                        // Optionally: clear storage and redirect to login
+                        // Refresh token failed, clear auth data and redirect to login
                         localStorage.removeItem('access_token');
                         localStorage.removeItem('refreshToken');
                         localStorage.removeItem('user');
@@ -46,14 +53,14 @@ const useAxiosPrivate = () => {
             }
         );
 
+        // Clean up interceptors when the component unmounts
         return () => {
-            axiosInstance.interceptors.request.eject(requestIntercept);
-            axiosInstance.interceptors.response.eject(responseIntercept);
+            axios.interceptors.request.eject(requestIntercept);
+            axios.interceptors.response.eject(responseIntercept);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [auth, refresh]);
+    }, [auth, refresh]); // Depend on auth and refresh to re-run if they change
 
-    return axiosInstance;
+    return axios;
 };
 
 export default useAxiosPrivate;
