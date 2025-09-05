@@ -127,12 +127,7 @@ const P2Accounts = ({ projectId, onSelectHead, onBack }) => {
                     )}
                 </div>
 
-                <div className="mt-8 sm:mt-12 text-center">
-                    <div className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 rounded-full bg-white shadow-sm border border-gray-100 text-xs sm:text-sm font-medium text-gray-600 hover:shadow-md transition-all duration-200">
-                        <span className="mr-2">⚡</span>
-                        Made in Bolt
-                    </div>
-                </div>
+              
             </div>
         </div>
     );
