@@ -4,9 +4,9 @@ import React, { useEffect, useState } from "react";
 import axiosInstance from './axiosInstance'; // Ensure this path is correct relative to EmployeeDocuments.jsx
 
 // Define base URL for images based on your Django setup
-// From your provided data, media is served from https://employeemanagement.company/media/
-// So, the base URL for the Django server is https://employeemanagement.company
-const BASE_API_URL = 'https://employeemanagement.company';
+// From your provided data, media is served from https://employeemanagement.company    /media/
+// So, the base URL for the Django server is https://employeemanagement.company    
+const BASE_API_URL = 'https://employeemanagement.company    ';
 
 // eslint-disable-next-line no-unused-vars
 export default function EmployeeDocs({ employeeId, onBack, employeeName }) {
