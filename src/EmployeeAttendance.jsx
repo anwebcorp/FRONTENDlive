@@ -42,7 +42,7 @@ function EmployeeAttendance({ employeeId, employeeName, onBack }) {
       }
 
       try {
-        const response = await fetch(`https://employeemanagement.company    /api/my-sheets/`, {
+        const response = await fetch(`https://employeemanagement.company/api/my-sheets/`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,

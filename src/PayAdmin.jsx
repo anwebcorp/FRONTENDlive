@@ -46,7 +46,7 @@ export default function PayAdmin({ employeeId, employeeName, onBack, onPayslipUp
         setLoading(true);
         setError(null);
         try {
-            const response = await axiosInstance.get(`https://employeemanagement.company    /api/admin/salary-slips/?profile=${employeeId}`);
+            const response = await axiosInstance.get(`https://employeemanagement.company/api/admin/salary-slips/?profile=${employeeId}`);
             // Assuming response.data is an array of payslip objects
             // Sort payslips from most recent to oldest
             const sortedPayslips = response.data.sort((a, b) => {
@@ -248,10 +248,10 @@ export default function PayAdmin({ employeeId, employeeName, onBack, onPayslipUp
         try {
             if (selectedPayslip && selectedPayslip.id) {
                 // Update existing payslip
-                await axiosInstance.put(`https://employeemanagement.company    /api/admin/salary-slips/${selectedPayslip.id}/`, formData);
+                await axiosInstance.put(`https://employeemanagement.company/api/admin/salary-slips/${selectedPayslip.id}/`, formData);
             } else {
                 // Create new payslip
-                await axiosInstance.post('https://employeemanagement.company    /api/admin/salary-slips/', {
+                await axiosInstance.post('https://employeemanagement.company/api/admin/salary-slips/', {
                     ...formData,
                     profile: employeeId // Ensure profile ID is sent for new payslip
                 });
@@ -325,7 +325,7 @@ export default function PayAdmin({ employeeId, employeeName, onBack, onPayslipUp
         setLoading(true);
         setError(null);
         try {
-            await axiosInstance.delete(`https://employeemanagement.company    /api/admin/salary-slips/${payslipId}/`);
+            await axiosInstance.delete(`https://employeemanagement.company/api/admin/salary-slips/${payslipId}/`);
             await fetchAllPayslips(); // Re-fetch to update the list
             if (onPayslipUpdate) { // Notify parent of the deletion
                 onPayslipUpdate();
@@ -346,7 +346,7 @@ export default function PayAdmin({ employeeId, employeeName, onBack, onPayslipUp
         setLoading(true);
         setError(null);
         try {
-            await axiosInstance.patch(`https://employeemanagement.company    /api/admin/salary-slips/${selectedPayslip.id}/`, { status: newStatus });
+            await axiosInstance.patch(`https://employeemanagement.company/api/admin/salary-slips/${selectedPayslip.id}/`, { status: newStatus });
             // Update local state for status without re-fetching all
             setFormData(prev => ({ ...prev, status: newStatus }));
             setSelectedPayslip(prev => prev ? { ...prev, status: newStatus } : null);

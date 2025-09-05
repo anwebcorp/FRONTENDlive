@@ -47,7 +47,7 @@ const Attendance = ({ employeeId: propEmployeeId, employeeName: propEmployeeName
             id: emp.id,
             name: emp.name,
             job_title: emp.Job_title,
-            photo: emp.image ? `https://employeemanagement.company    ${emp.image}` : `https://placehold.co/150x150/CCCCCC/FFFFFF?text=${emp.name.charAt(0)}`
+            photo: emp.image ? `https://employeemanagement.company${emp.image}` : `https://placehold.co/150x150/CCCCCC/FFFFFF?text=${emp.name.charAt(0)}`
         }));
       setEmployees(fetchedEmployees);
 
