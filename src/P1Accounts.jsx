@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAxiosPrivate from './useAxiosPrivate';
-import P2Accounts from './p2Accounts.jsx';
-import P3Accounts from './p3Accounts.jsx';
+import P2Accounts from './P2Accounts.jsx';
+import p3Accounts from './p3Accounts.jsx';
 
 const P1Accounts = () => {
     const [view, setView] = useState('projects');
@@ -34,6 +34,7 @@ const P1Accounts = () => {
         if (view === 'projects') {
             fetchProjects();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [view]);
 
     const handleCreateProject = async (e) => {
