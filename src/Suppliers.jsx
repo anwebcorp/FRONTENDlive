@@ -100,7 +100,7 @@ const Suppliers = ({ onBack }) => {
 
     const constructImageUrl = (path) => {
         if (path && typeof path === 'string' && path.startsWith('/')) {
-            return `https://employeemanagement.company    ${path}`;
+            return `https://employeemanagement.company${path}`;
         }
         return path;
     };
