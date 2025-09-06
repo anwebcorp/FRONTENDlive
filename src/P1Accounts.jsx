@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAxiosPrivate from './useAxiosPrivate';
 import P2Accounts from './P2Accounts.jsx';
-import p3Accounts from './p3Accounts.jsx';
+import P3Accounts from './P3Accounts.jsx';
 
 const P1Accounts = () => {
     const [view, setView] = useState('projects');
